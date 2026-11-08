@@ -533,6 +533,15 @@
 import * as THREE from 'three';
 
 /* ============================================================
+   НАСТРОЙКИ СЕТИ — ВСТАВЬ СЮДА СВОЙ СЕРВЕР С RENDER
+   ============================================================ */
+// Если ты ещё не создал сервер на Render, замени эту строку на '0.peerjs.com' (временно, пока сервер лежит)
+const PEER_HOST = 'zaharka-peer.onrender.com';
+const PEER_PORT = 443;
+const PEER_PATH = '/';
+const PEER_SECURE = true;
+
+/* ============================================================
    РЕЖИМЫ
    ============================================================ */
 const MODE = { MENU: 0, PLAY: 1 };
@@ -566,7 +575,7 @@ const JUMP_VELOCITY = 8.0;
 const PLAYER_SPEED = 8;
 const PLAYER_RADIUS = 0.4;
 
-const TICK_RATE = 30;                      // снимков/сек
+const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 
 /* ============================================================
@@ -575,7 +584,7 @@ const TICK_MS = 1000 / TICK_RATE;
 let scene, camera, renderer, clock;
 let colliders = [], tracers = [];
 let raycaster;
-let player, remotePlayer;                  // player = мы, remotePlayer = другой игрок
+let player, remotePlayer;
 let platforms = [];
 
 const scoreEl = document.getElementById('score');
@@ -595,25 +604,11 @@ const menuCam = {
    P2P СОСТОЯНИЕ
    ============================================================ */
 const net = {
-  peer: null,           // PeerJS instance
-  conn: null,           // DataConnection
-  isHost: false,
-  isOnline: false,
-  myName: 'Игрок',
-  otherName: 'Другой',
-  roomCode: null,
-  connected: false,
-  // для хоста — last received input from guest
+  peer: null, conn: null, isHost: false, isOnline: false,
+  myName: 'Игрок', otherName: 'Другой', roomCode: null, connected: false,
   guestInput: { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false },
-  // для гостя — последний снимок от хоста
-  lastSnapshot: null,
-  lastSnapshotTime: 0,
-  // для хоста — HP игроков
-  hostHp: 100,
-  guestHp: 100,
-  // для гостя — interpolated remote state
-  interpRemote: null,
-  interpHost: null,
+  lastSnapshot: null, lastSnapshotTime: 0,
+  hostHp: 100, guestHp: 100,
 };
 
 /* ============================================================
@@ -714,7 +709,7 @@ function initScene() {
   });
 }
 
-/* ========== УДАЛЁННЫЙ ИГРОК — МОДЕЛЬ ========== */
+/* ========== УДАЛЁННЫЙ ИГРОК ========== */
 function createRemotePlayerModel() {
   const g = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({ color:0x4488dd, roughness:0.6, emissive:0x112244 });
@@ -729,7 +724,7 @@ function createRemotePlayerModel() {
   const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.5, 10),
                               new THREE.MeshStandardMaterial({color:0x333333}));
   legs.position.y = 0.25; g.add(legs);
-  // хитбоксы
+  
   const hitHead = new THREE.Mesh(new THREE.SphereGeometry(0.42, 6, 5),
                                  new THREE.MeshBasicMaterial({visible:false}));
   hitHead.position.y = 2.2;
@@ -740,7 +735,7 @@ function createRemotePlayerModel() {
   hitBody.position.y = 1.05;
   hitBody.userData = { part:'body' };
   g.add(hitBody);
-  // нейм-таг
+
   const tagCanvas = document.createElement('canvas');
   tagCanvas.width = 256; tagCanvas.height = 64;
   const tagTex = new THREE.CanvasTexture(tagCanvas);
@@ -768,9 +763,7 @@ function updateRemoteTag(name) {
   remotePlayer.tagTex.needsUpdate = true;
 }
 
-/* ============================================================
-   ХЕЛПЕРЫ КОЛЛИЗИЙ
-   ============================================================ */
+/* ========== КОЛЛИЗИИ ========== */
 const _testBox = new THREE.Box3();
 const _min = new THREE.Vector3();
 const _max = new THREE.Vector3();
@@ -809,11 +802,8 @@ function groundHeightAt(nx, nz, fromY, radius) {
   return best;
 }
 
-/* ============================================================
-   ФИЗИКА ИГРОКА (универсальная — для локального и удалённого)
-   ============================================================ */
+/* ========== ФИЗИКА ========== */
 function stepPlayerPhysics(state, moveInput, dt) {
-  // state = { pos:{x,y,z}, vy, onGround, coyoteTimer, yaw, pitch }
   const yaw = state.yaw;
   const forwardX = -Math.sin(yaw);
   const forwardZ = -Math.cos(yaw);
@@ -866,9 +856,7 @@ function tryJump(state) {
   return false;
 }
 
-/* ============================================================
-   УПРАВЛЕНИЕ (левая половина — движение, правая — обзор)
-   ============================================================ */
+/* ========== УПРАВЛЕНИЕ ========== */
 const input = { moveX: 0, moveY: 0, fire: false };
 const LOOK_SENS = 0.006;
 const STICK_RADIUS = 60, STICK_DEADZONE = 3;
@@ -975,9 +963,7 @@ fireBtn.addEventListener('touchcancel',e => { e.preventDefault(); e.stopPropagat
 fireBtn.addEventListener('mousedown',  () => input.fire = true);
 fireBtn.addEventListener('mouseup',    () => input.fire = false);
 
-/* ============================================================
-   СТРЕЛЬБА
-   ============================================================ */
+/* ========== СТРЕЛЬБА ========== */
 const SHOT_COOLDOWN = 110;
 
 function tryShoot() {
@@ -991,7 +977,6 @@ function tryShoot() {
   camera.getWorldDirection(shootDir);
   camera.getWorldPosition(origin);
 
-  // клиентский рейкаст — против стен и модели удалённого игрока
   const targets = [];
   if (remotePlayer.group.visible) {
     targets.push(remotePlayer.hitHead, remotePlayer.hitBody);
@@ -1012,13 +997,12 @@ function tryShoot() {
     const part = first.object.userData.part;
     const dmg = part === 'head' ? 80 : 25;
     flashHit(first.point, part === 'head');
-    // гость шлёт хосту hit-событие; хост валидирует
+    
+    // СЕТЕВАЯ ЛОГИКА
     if (net.isOnline) {
       if (net.isHost) {
-        // я хост — я авторитет, применяю урон
         applyDamageToGuest(dmg, part === 'head');
       } else {
-        // я гость — шлю hit хосту
         net.conn.send({ t:'hit', dmg, head: part === 'head' });
       }
     }
@@ -1041,31 +1025,26 @@ function flashHit(pos, head) {
   tracers.push({ line:m, born: performance.now(), isFlash:true });
 }
 
-/* ============================================================
-   УРОН
-   ============================================================ */
+/* ========== УРОН ========== */
 function applyDamageToGuest(dmg, head) {
-  // только хост вызывает это
   if (!net.isHost) return;
   net.guestHp -= dmg;
   if (net.guestHp < 0) net.guestHp = 0;
   net.conn.send({ t:'hp', guest: net.guestHp, host: net.hostHp });
-  addKillfeed(`${net.myName} ${head ? 'в голову' : ''} → ${net.otherName}`, head ? '#ff4444' : '#ffaa44');
+  addKillfeed(`${net.myName} → ${net.otherName}`, head ? '#ff4444' : '#ffaa44');
+  
   if (net.guestHp <= 0) {
-    // раунд хоста выигран
     net.conn.send({ t:'kill', killer: net.myName, victim: net.otherName });
     showDeathScreen(net.otherName, net.myName);
   }
 }
 
 function applyDamageToHost(dmg, head) {
-  // гость шлёт, хост авторитетно применяет
-  // на самом деле гость не должен вызывать эту — только хосту приходит hit
-  // но сервер-хост — это net.hostHp -= dmg
   net.hostHp -= dmg;
   if (net.hostHp < 0) net.hostHp = 0;
   net.conn.send({ t:'hp', guest: net.guestHp, host: net.hostHp });
-  addKillfeed(`${net.otherName} ${head ? 'в голову' : ''} → ${net.myName}`, head ? '#ff4444' : '#ffaa44');
+  addKillfeed(`${net.otherName} → ${net.myName}`, head ? '#ff4444' : '#ffaa44');
+  
   if (net.hostHp <= 0) {
     net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
     showDeathScreen(net.myName, net.otherName);
@@ -1073,7 +1052,7 @@ function applyDamageToHost(dmg, head) {
 }
 
 function showDeathScreen(victim, killer) {
-  if (victim !== net.myName) return; // показываем только если мы умерли
+  if (victim !== net.myName) return;
   document.getElementById('deathKiller').textContent = killer;
   document.getElementById('deathOverlay').classList.add('show');
   player.alive = false;
@@ -1081,9 +1060,7 @@ function showDeathScreen(victim, killer) {
   input.moveX = 0; input.moveY = 0;
 }
 
-/* ============================================================
-   KILLFEED
-   ============================================================ */
+/* ========== KILLFEED ========== */
 function addKillfeed(text, color='#fff') {
   const el = document.createElement('div');
   el.className = 'killMsg';
@@ -1123,7 +1100,12 @@ function createRoom() {
   net.roomCode = genRoomCode();
 
   setNetStatus('СОЗДАНИЕ КОМНАТЫ...', 'wait');
+  
   net.peer = new Peer(net.roomCode, {
+    host: PEER_HOST,
+    port: PEER_PORT,
+    path: PEER_PATH,
+    secure: PEER_SECURE,
     config: { iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
@@ -1142,29 +1124,18 @@ function createRoom() {
 
   net.peer.on('connection', (conn) => {
     net.conn = conn;
-    conn.on('open', () => {
-      net.connected = true;
-      // ждём первое сообщение от гостя с ником
-    });
+    conn.on('open', () => { net.connected = true; });
     conn.on('data', handlePeerData);
     conn.on('close', () => {
-      if (mode === MODE.PLAY) {
-        alert('Соединение разорвано');
-        exitToMenu();
-      }
+      if (mode === MODE.PLAY) { alert('Соединение разорвано'); exitToMenu(); }
     });
-    conn.on('error', (err) => {
-      console.error('Conn error:', err);
-    });
+    conn.on('error', (err) => { console.error('Conn error:', err); });
   });
 
   net.peer.on('error', (err) => {
     console.error('Peer error:', err);
-    if (err.type === 'unavailable-id') {
-      setNetStatus('КОД ЗАНЯТ, ПОПРОБУЙ ЕЩЁ РАЗ', 'err');
-    } else {
-      setNetStatus('ОШИБКА: ' + err.type, 'err');
-    }
+    if (err.type === 'unavailable-id') setNetStatus('КОД ЗАНЯТ, ПОПРОБУЙ ЕЩЁ РАЗ', 'err');
+    else setNetStatus('ОШИБКА: ' + err.type, 'err');
   });
 }
 
@@ -1177,10 +1148,13 @@ function joinRoom() {
 
   net.myName = nick;
   net.isHost = false;
-
   setNetStatus('ПОДКЛЮЧЕНИЕ...', 'wait');
 
   net.peer = new Peer(null, {
+    host: PEER_HOST,
+    port: PEER_PORT,
+    path: PEER_PATH,
+    secure: PEER_SECURE,
     config: { iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
@@ -1196,12 +1170,8 @@ function joinRoom() {
     });
     net.conn.on('data', handlePeerData);
     net.conn.on('close', () => {
-      if (mode === MODE.PLAY) {
-        alert('Соединение разорвано');
-        exitToMenu();
-      } else {
-        setNetStatus('НЕ УДАЛОСЬ ПОДКЛЮЧИТЬСЯ', 'err');
-      }
+      if (mode === MODE.PLAY) { alert('Соединение разорвано'); exitToMenu(); }
+      else setNetStatus('НЕ УДАЛОСЬ ПОДКЛЮЧИТЬСЯ', 'err');
     });
     net.conn.on('error', (err) => {
       console.error('Conn error:', err);
@@ -1211,11 +1181,8 @@ function joinRoom() {
 
   net.peer.on('error', (err) => {
     console.error('Peer error:', err);
-    if (err.type === 'peer-unavailable') {
-      setNetStatus('КОМНАТА НЕ НАЙДЕНА', 'err');
-    } else {
-      setNetStatus('ОШИБКА: ' + err.type, 'err');
-    }
+    if (err.type === 'peer-unavailable') setNetStatus('КОМНАТА НЕ НАЙДЕНА', 'err');
+    else setNetStatus('ОШИБКА: ' + err.type, 'err');
   });
 }
 
@@ -1223,7 +1190,6 @@ function handlePeerData(data) {
   if (!data || !data.t) return;
 
   if (data.t === 'hello') {
-    // хост получает hello от гостя — гость подключился
     if (net.isHost) {
       net.otherName = data.name;
       otherName.textContent = net.otherName;
@@ -1231,12 +1197,10 @@ function handlePeerData(data) {
       setNetStatus('ПОДКЛЮЧЕНО!', 'ok');
       document.getElementById('hostPlayers').innerHTML =
         `Ты: <b style="color:#ff8844;">${net.myName}</b><br>Гость: <b style="color:#88ddff;">${net.otherName}</b>`;
-      // ждём 800мс чтобы гость получил welcome, потом стартуем
       setTimeout(() => { enterOnlineGame(); }, 400);
     }
   }
   else if (data.t === 'welcome') {
-    // гость получает welcome — хост готов
     if (!net.isHost) {
       net.otherName = data.name;
       otherName.textContent = net.otherName;
@@ -1244,7 +1208,6 @@ function handlePeerData(data) {
     }
   }
   else if (data.t === 'input') {
-    // хост получает инпут гостя
     if (net.isHost) {
       net.guestInput.moveX = data.mx;
       net.guestInput.moveY = data.my;
@@ -1254,20 +1217,15 @@ function handlePeerData(data) {
     }
   }
   else if (data.t === 'state') {
-    // гость получает снимок состояния от хоста
     if (!net.isHost) {
       net.lastSnapshot = data;
       net.lastSnapshotTime = performance.now();
     }
   }
   else if (data.t === 'hit') {
-    // хост получает hit от гостя — валидирует и применяет урон ХОСТУ
-    if (net.isHost) {
-      applyDamageToHost(data.dmg, data.head);
-    }
+    if (net.isHost) applyDamageToHost(data.dmg, data.head);
   }
   else if (data.t === 'hp') {
-    // гость получает HP-апдейт
     if (!net.isHost) {
       net.hostHp = data.host;
       net.guestHp = data.guest;
@@ -1276,7 +1234,6 @@ function handlePeerData(data) {
     }
   }
   else if (data.t === 'kill') {
-    // кто-то умер
     if (!net.isHost) {
       if (data.victim === net.myName) {
         document.getElementById('deathKiller').textContent = data.killer;
@@ -1293,7 +1250,6 @@ function enterOnlineGame() {
   mode = MODE.PLAY;
   net.isOnline = true;
 
-  // респавн в противоположных углах
   player.pos.set(0, 0, 25);
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
   player.hp = 100; player.alive = true;
@@ -1302,13 +1258,11 @@ function enterOnlineGame() {
   net.hostHp = 100;
   net.guestHp = 100;
 
-  // модель удалённого игрока в противоположной точке
   remotePlayer.group.visible = true;
   remotePlayer.group.position.set(0, 0, -25);
   remotePlayer.group.rotation.y = 0;
   updateRemoteTag(net.otherName);
 
-  // UI
   menuEl.classList.add('hidden');
   document.getElementById('netModal').classList.remove('show');
   document.body.classList.add('ingame');
@@ -1320,14 +1274,10 @@ function enterOnlineGame() {
   hpEl.textContent = 100;
 
   clock.getDelta();
-
-  // запуск тика синхронизации
   startNetTick();
 }
 
-/* ============================================================
-   СЕТЕВОЙ ТИК
-   ============================================================ */
+/* ========== СЕТЕВОЙ ТИК ========== */
 let netTickInterval = null;
 let guestInputAccum = { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false };
 
@@ -1335,11 +1285,9 @@ function startNetTick() {
   if (netTickInterval) clearInterval(netTickInterval);
 
   if (net.isHost) {
-    // ХОСТ: физика обоих + рассылка снимков
     netTickInterval = setInterval(() => {
       if (!net.connected || mode !== MODE.PLAY) return;
 
-      // физика гостя на основе последнего инпута
       const guestState = {
         pos: remotePlayer.group.position,
         vy: remotePlayer._vy || 0,
@@ -1353,23 +1301,18 @@ function startNetTick() {
       remotePlayer._onGround = guestState.onGround;
       remotePlayer.group.rotation.y = guestState.yaw;
 
-      // выстрел гостя — рисуем трассер у себя если он стрелял
       if (net.guestInput.fire) {
-        // простая проверка — не чаще раза в 110мс
         const now = performance.now();
         if (!remotePlayer._lastShot || now - remotePlayer._lastShot > 110) {
           remotePlayer._lastShot = now;
-          // визуальный трассер от гостя в нашу сторону
           const from = remotePlayer.group.position.clone().add(new THREE.Vector3(0, 1.5, 0));
           const to = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0));
-          // с рандомным промахом
           if (Math.random() < 0.5) to.x += (Math.random()-0.5) * 2;
           if (Math.random() < 0.5) to.z += (Math.random()-0.5) * 2;
           spawnTracer(from, to, 0xff6644);
         }
       }
 
-      // снимок состояния
       net.conn.send({
         t: 'state',
         host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, pitch: player.pitch, alive: player.alive },
@@ -1377,47 +1320,35 @@ function startNetTick() {
       });
     }, TICK_MS);
   } else {
-    // ГОСТЬ: отправка инпута + интерполяция удалённых позиций
     netTickInterval = setInterval(() => {
       if (!net.connected || mode !== MODE.PLAY) return;
 
       net.conn.send({
         t: 'input',
-        mx: input.moveX,
-        my: input.moveY,
-        yaw: player.yaw,
-        pitch: player.pitch,
-        fire: input.fire,
+        mx: input.moveX, my: input.moveY,
+        yaw: player.yaw, pitch: player.pitch, fire: input.fire,
       });
 
-      // применяем снимок хоста
       const snap = net.lastSnapshot;
       if (!snap) return;
 
-      // хост (наш противник)
       const targetHost = snap.host;
       const cp = remotePlayer.group.position;
-      // интерполяция позиции хоста
       cp.x += (targetHost.x - cp.x) * 0.3;
       cp.y += (targetHost.y - cp.y) * 0.3;
       cp.z += (targetHost.z - cp.z) * 0.3;
       remotePlayer.group.rotation.y += (targetHost.yaw - remotePlayer.group.rotation.y) * 0.3;
       remotePlayer.group.visible = targetHost.alive !== false;
-
-      // обновление HP-бара противника (уже приходит отдельным сообщением)
     }, TICK_MS);
   }
 }
 
 function stopNetTick() {
-  if (netTickInterval) {
-    clearInterval(netTickInterval);
-    netTickInterval = null;
-  }
+  if (netTickInterval) { clearInterval(netTickInterval); netTickInterval = null; }
 }
 
 /* ============================================================
-   UI-ОБРАБОТЧИКИ МОДАЛКИ
+   UI МОДАЛКИ
    ============================================================ */
 const netModal = document.getElementById('netModal');
 document.getElementById('netBtn').addEventListener('click', () => {
@@ -1524,12 +1455,10 @@ function animate() {
     camera.position.set(x, menuCam.height, z);
     camera.lookAt(menuCam.centerX, menuCam.height + menuCam.pitch, menuCam.centerZ);
   } else {
-    // физика игрока
     if (player.alive) {
       stepPlayerPhysics(player, input, dt);
       if (input.fire) tryShoot();
     }
-    // камера
     const camY = player.pos.y + PLAYER_HEIGHT;
     camera.position.set(player.pos.x, camY, player.pos.z);
     const cp = Math.cos(player.pitch);
@@ -1540,7 +1469,6 @@ function animate() {
     );
     camera.lookAt(camera.position.clone().add(lookDir));
 
-    // fadeout tracers
     const now = performance.now();
     for (let i = tracers.length-1; i >= 0; i--) {
       const t = tracers[i];
@@ -1556,7 +1484,6 @@ function animate() {
       }
     }
   }
-
   renderer.render(scene, camera);
 }
 
@@ -1602,4 +1529,4 @@ initScene();
 animate();
 </script>
 </body>
-</html>
+ </html>
