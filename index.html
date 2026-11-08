@@ -532,7 +532,7 @@
 import * as THREE from 'three';
 
 /* ============================================================
-   НАСТРОЙКИ СЕТИ — ВСТАВЬ СЮДА СВОЙ СЕРВЕР С RENDER
+   НАСТРОЙКИ СЕТИ
    ============================================================ */
 const PEER_HOST = 'zaharkashuter.onrender.com'; 
 const PEER_PORT = 443;
@@ -1160,15 +1160,13 @@ function handlePeerData(data) {
   if (data.t === 'hello') {
     if (net.isHost) {
       net.otherName = data.name;
-      otherName.textContent = net.otherName;
       net.conn.send({ t:'start', name: net.myName });
-      setTimeout(() => { enterOnlineGame(); }, 100);
+      enterOnlineGame();
     }
   }
   else if (data.t === 'start') {
     if (!net.isHost) {
       net.otherName = data.name;
-      otherName.textContent = net.otherName;
       enterOnlineGame();
     }
   }
@@ -1195,7 +1193,6 @@ function handlePeerData(data) {
       dmgFlash.style.opacity = '0.8';
       setTimeout(() => dmgFlash.style.opacity = '0', 100);
       addKillfeed(`${net.otherName} → ${net.myName}`, data.head ? '#ff4444' : '#ffaa44');
-      
       net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
       if (net.hostHp <= 0) {
         net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
