@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
+<title>ЗахаркаШутер</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#000; touch-action:none; user-select:none; -webkit-user-select:none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #game { position:fixed; inset:0; z-index:1; }
+  canvas { display:block; }
+
+  /* ============ МЕНЮ ============ */
+  #menu {
+    position:fixed; inset:0; z-index:100;
+    display:flex; flex-direction:row; color:#fff;
+    pointer-events:none;
+    background: linear-gradient(90deg, rgba(10,15,26,0.85) 0%, rgba(10,15,26,0.4) 30%, transparent 55%);
+  }
+  #menu.hidden { display:none; }
+  #menuSide {
+    width: 220px; flex-shrink:0;
+    display:flex; flex-direction:column;
+    padding: 24px 16px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    pointer-events:auto;
+  }
+  #menuHeader { margin-bottom: 28px; }
+  #menuHeader h1 {
+    font-size:20px; font-weight:900; letter-spacing:2px;
+    color:#ff8844; text-shadow: 0 0 20px rgba(255,136,68,0.6);
+    line-height:1.15;
+  }
+  #menuHeader .sub { font-size:10px; color:#666; letter-spacing:2px; margin-top:8px; font-weight:600; }
+  #tabs { display:flex; flex-direction:column; gap:6px; flex:1; }
+  .tab {
+    padding:14px 16px; text-align:left;
+    font-size:13px; font-weight:800; letter-spacing:2px;
+    color:#5a6278; cursor:pointer;
+    border-radius:8px; border-left: 3px solid transparent;
+    transition: all 0.18s;
+  }
+  .tab.active {
+    color:#ff8844;
+    background: rgba(255,136,68,0.1);
+    border-left-color:#ff8844;
+    text-shadow: 0 0 10px rgba(255,136,68,0.4);
+  }
+  .tab:active { background: rgba(255,255,255,0.05); }
+  #menuSideFooter { font-size:10px; color:#444; letter-spacing:1px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.05); line-height:1.5; }
+
+  #tabContent {
+    flex:1; position:relative;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-right: 48px; pointer-events:none;
+  }
+  .tabPanel {
+    display:none; pointer-events:auto;
+    flex-direction:column; gap:12px;
+    max-width: 340px; width:100%;
+    align-items: flex-end; text-align: right;
+  }
+  .tabPanel.active { display:flex; }
+
+  .placeholder {
+    align-items: center; text-align: center;
+    background: rgba(0,0,0,0.6);
+    padding: 28px; border-radius: 16px; backdrop-filter: blur(8px);
+  }
+  .placeholder .icon { font-size:56px; opacity:0.4; }
+  .placeholder .text { font-size:16px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:#5a6278; }
+  .placeholder .hint { font-size:12px; opacity:0.6; max-width:240px; line-height:1.5; color:#5a6278; }
+
+  #playPanel { align-items: flex-end; max-width: 340px; }
+  #agentName { text-align:right; }
+  #agentName .name {
+    font-size:32px; font-weight:900; letter-spacing:3px;
+    color:#fff; text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 30px rgba(255,136,68,0.3);
+  }
+  #agentName .sub { font-size:11px; color:#ff8844; letter-spacing:3px; font-weight:700; margin-top:6px; }
+
+  .menuBtn {
+    padding: 14px 24px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    color:#fff; font-size:14px; font-weight:800; letter-spacing:2px;
+    cursor:pointer; width:100%; text-align:center;
+    backdrop-filter: blur(4px);
+    transition: all 0.15s;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .menuBtn:hover, .menuBtn:active {
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,136,68,0.5);
+  }
+  .menuBtn.primary {
+    background: linear-gradient(135deg, #ff8844 0%, #ff5522 100%);
+    border: none;
+    box-shadow: 0 6px 24px rgba(255,100,50,0.4);
+    font-weight: 900;
+    font-size: 16px;
+    padding: 18px 24px;
+  }
+  .menuBtn.primary:active { transform: scale(0.97); }
+  .menuBtn.net {
+    background: linear-gradient(135deg, rgba(80,180,255,0.4), rgba(40,120,200,0.4));
+    border: 1px solid rgba(120,200,255,0.6);
+    color:#aaddff;
+  }
+  .menuBtn.net:active {
+    background: linear-gradient(135deg, rgba(80,180,255,0.7), rgba(40,120,200,0.7));
+  }
+
+  /* ============ МОДАЛКА ОНЛАЙН ============ */
+  #netModal {
+    position:fixed; inset:0; z-index:150;
+    background: rgba(0,0,0,0.92);
+    display:none;
+    align-items:center; justify-content:center;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+  }
+  #netModal.show { display:flex; }
+
+  #netPanel {
+    background: linear-gradient(135deg, #1a1f2e 0%, #0d1018 100%);
+    border: 1px solid rgba(255,136,68,0.3);
+    border-radius: 16px;
+    max-width: 460px; width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 24px;
+    color:#fff;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    position:relative;
+  }
+  #netPanel h2 {
+    font-size: 20px; font-weight: 900; letter-spacing: 2px;
+    color:#ff8844; margin-bottom: 16px; text-align: center;
+    text-shadow: 0 0 20px rgba(255,136,68,0.4);
+  }
+  #netPanel h3 {
+    font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
+    color:#7a8299; margin: 14px 0 8px;
+    text-transform:uppercase;
+  }
+  #netPanel p {
+    font-size: 12px; line-height: 1.6; color:#7a8299; margin-bottom: 10px;
+  }
+
+  .netClose {
+    position:absolute; top:12px; right:12px;
+    background: rgba(255,60,60,0.15);
+    border: 1px solid rgba(255,60,60,0.4);
+    color: #ff8888;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    font-size: 14px; font-weight: 900;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: all 0.15s;
+  }
+  .netClose:active { background: rgba(255,60,60,0.4); }
+
+  .netInput {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 8px;
+  }
+  .netInput:focus { border-color: rgba(255,136,68,0.6); }
+  .netInput::placeholder { color:#555; font-weight: 400; }
+
+  .netCodeBox {
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(255,136,68,0.1), rgba(255,85,34,0.05));
+    border: 2px solid rgba(255,136,68,0.4);
+    border-radius: 12px;
+    text-align: center;
+    margin: 10px 0;
+  }
+  .netCodeBox .code {
+    font-family: 'Courier New', monospace;
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    color: #ff8844;
+    text-shadow: 0 0 20px rgba(255,136,68,0.6);
+  }
+  .netCodeBox .hint { font-size: 11px; color:#7a8299; margin-top: 6px; }
+
+  .netBtn {
+    padding: 12px 20px;
+    margin: 6px 6px 0 0;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    color:#fff;
+    font-size: 13px; font-weight: 800; letter-spacing: 1.5px;
+    cursor:pointer;
+    transition: all 0.15s;
+  }
+  .netBtn:hover, .netBtn:active {
+    background: rgba(255,136,68,0.3);
+    border-color: rgba(255,136,68,0.6);
+  }
+  .netBtn.primary {
+    background: linear-gradient(135deg, #ff8844, #ff5522);
+    border: none;
+    width: 100%;
+    padding: 14px;
+    font-size: 15px;
+    margin-top: 10px;
+  }
+  .netBtn.primary:active { transform: scale(0.97); }
+  .netBtn.full { width: 100%; margin-right: 0; }
+  .netBtn.back { background: rgba(0,0,0,0.4); }
+
+  .netStatus {
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    color: #7a8299;
+    margin-bottom: 14px;
+    text-align: center;
+    border-left: 3px solid #444;
+  }
+  .netStatus.ok { color: #4cff88; border-left-color: #4cff88; background: rgba(76,255,136,0.08); }
+  .netStatus.err { color: #ff5555; border-left-color: #ff5555; background: rgba(255,85,85,0.08); }
+  .netStatus.wait { color: #ffaa44; border-left-color: #ffaa44; background: rgba(255,170,68,0.08); }
+
+  .netView { display: none; }
+  .netView.show { display: block; }
+
+  /* ============ ИГРОВОЙ UI ============ */
+  #stickL {
+    position:fixed; width:140px; height:140px;
+    border-radius:50%; border:2px solid rgba(255,255,255,0.3);
+    background:rgba(255,255,255,0.06); z-index:10;
+    pointer-events:none; opacity:0; transition:opacity 0.1s;
+    transform:translate(-50%, -50%);
+  }
+  #stickL.active { opacity:1; }
+  .knob {
+    position:absolute; width:60px; height:60px;
+    left:50%; top:50%; margin-left:-30px; margin-top:-30px;
+    border-radius:50%; background:rgba(255,255,255,0.4);
+    border:2px solid rgba(255,255,255,0.65); pointer-events:none;
+  }
+  #rightHalf { position:fixed; top:0; right:0; bottom:0; width:50%; z-index:5; touch-action:none; }
+  #leftHalf  { position:fixed; top:0; left:0;  bottom:0; width:50%; z-index:5; touch-action:none; }
+  #leftHalf, #rightHalf, #stickL, #fire, #jump, #hud, #crosshair, #netBadge, #otherHud, #exitBtn, #killfeed { display:none; }
+  body.ingame #leftHalf, body.ingame #rightHalf { display:block; }
+  body.ingame #stickL, body.ingame #fire, body.ingame #jump { display:flex; }
+  body.ingame #hud, body.ingame #crosshair, body.ingame #netBadge, body.ingame #otherHud, body.ingame #exitBtn { display:block; }
+  body.ingame #killfeed { display:flex; }
+
+  #fire {
+    position:fixed; right:45px; bottom:180px; width:110px; height:110px;
+    border-radius:50%; background:rgba(255,60,60,0.35);
+    border:3px solid rgba(255,100,100,0.85); z-index:11;
+    color:#fff; font:bold 20px sans-serif;
+    align-items:center; justify-content:center; touch-action:none;
+    box-shadow:0 0 20px rgba(255,60,60,0.3);
+  }
+  #fire:active { background:rgba(255,120,120,0.7); transform:scale(0.95); }
+  #jump {
+    position:fixed; right:45px; bottom:55px; width:100px; height:100px;
+    border-radius:50%; background:rgba(80,180,255,0.3);
+    border:3px solid rgba(120,200,255,0.85); z-index:11;
+    color:#fff; font:bold 18px sans-serif;
+    align-items:center; justify-content:center; touch-action:none;
+    box-shadow:0 0 20px rgba(80,180,255,0.3);
+  }
+  #jump:active { background:rgba(120,200,255,0.65); transform:scale(0.95); }
+
+  #hud {
+    position:fixed; top:15px; left:15px; color:#fff;
+    font:bold 20px monospace; z-index:10; text-shadow:0 0 6px #000;
+    line-height:1.4;
+  }
+  #score { color:#0f0; }
+  #hp    { color:#ff5555; }
+
+  #netBadge {
+    position:fixed; top:15px; left:50%; transform:translateX(-50%);
+    padding: 6px 16px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 20px;
+    border: 1px solid rgba(76,255,136,0.4);
+    color: #4cff88;
+    font: bold 11px monospace;
+    letter-spacing: 1px;
+    z-index: 10;
+  }
+  #netBadge.host { color:#ffaa44; border-color:rgba(255,170,68,0.4); }
+
+  #otherHud {
+    position:fixed; top:15px; right:120px;
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 10px;
+    color:#fff;
+    font: bold 13px monospace;
+    line-height: 1.5;
+    z-index: 10;
+    text-shadow: 0 0 4px #000;
+    text-align: right;
+  }
+  #otherHud .otherName { color:#ff8888; font-weight: 900; }
+  #otherHud .otherHp { color:#ff5555; }
+
+  #killfeed {
+    position:fixed; top: 80px; right: 15px;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+    align-items: flex-end;
+  }
+  .killMsg {
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 6px;
+    color: #fff;
+    font: 600 12px monospace;
+    animation: fadeOut 3s forwards;
+  }
+  @keyframes fadeOut {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(20px); }
+  }
+
+  #crosshair {
+    position:fixed; left:50%; top:50%; width:22px; height:22px;
+    margin:-11px 0 0 -11px; z-index:9; pointer-events:none;
+  }
+  #crosshair::before, #crosshair::after { content:''; position:absolute; background:rgba(255,255,255,0.7); }
+  #crosshair::before { left:10px; top:0; width:2px; height:22px; }
+  #crosshair::after  { top:10px; left:0; height:2px; width:22px; }
+  #damageFlash {
+    position:fixed; inset:0; pointer-events:none; z-index:8;
+    background:radial-gradient(circle, transparent 40%, rgba(255,0,0,0.6) 100%);
+    opacity:0; transition:opacity 0.12s;
+  }
+  body:not(.ingame) #damageFlash { display:none; }
+
+  #exitBtn {
+    position:fixed; top:15px; right:15px;
+    padding:8px 20px; z-index:12;
+    background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.3);
+    border-radius:6px; color:#fff; font:bold 12px sans-serif;
+    letter-spacing:2px; cursor:pointer;
+  }
+  #exitBtn:active { background:rgba(255,255,255,0.15); }
+
+  #deathOverlay {
+    position:fixed; inset:0; z-index:50;
+    background: rgba(50,0,0,0.85);
+    display:none; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:20px; color:#fff;
+    backdrop-filter: blur(8px);
+  }
+  #deathOverlay.show { display:flex; }
+  #deathOverlay h2 {
+    font-size:40px; font-weight:900; color:#ff3333;
+    letter-spacing:4px; text-shadow: 0 0 30px rgba(255,50,50,0.8);
+  }
+  #deathOverlay .stats { font-size:18px; color:#aaa; }
+  #deathOverlay .stats b { color:#0f0; }
+  #deathOverlay button {
+    padding:14px 40px; margin-top:10px;
+    background: linear-gradient(135deg, #ff8844, #ff5522);
+    border:none; border-radius:10px; color:#fff;
+    font:900 16px sans-serif; letter-spacing:3px;
+    cursor:pointer; box-shadow: 0 6px 20px rgba(255,100,50,0.4);
+  }
+  #deathOverlay button:active { transform:scale(0.97); }
+
+  @media (orientation: portrait) {
+    #menu::before {
+      content:'ПОВЕРНИ УСТРОЙСТВО';
+      position:fixed; inset:0; z-index:200;
+      display:flex; align-items:center; justify-content:center;
+      background:#0d1018; color:#ff8844;
+      font:900 20px sans-serif; letter-spacing:3px;
+      text-align:center; padding:40px;
+    }
+    #menu > * { visibility:hidden; }
+  }
+</style>
+</head>
+<body>
+
+<div id="game"></div>
+
+<!-- ================= МЕНЮ ================= -->
+<div id="menu">
+  <div id="menuSide">
+    <div id="menuHeader">
+      <h1>ЗАХАРКА<br>ШУТЕР</h1>
+      <div class="sub">SURVIVAL FPS</div>
+    </div>
+    <div id="tabs">
+      <div class="tab" data-tab="inventory">ИНВЕНТАРЬ</div>
+      <div class="tab active" data-tab="play">ИГРАТЬ</div>
+      <div class="tab" data-tab="shop">МАГАЗИН</div>
+    </div>
+    <div id="menuSideFooter">
+      ВЕРСИЯ 0.7 · P2P<br>
+      КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
+    </div>
+  </div>
+  <div id="tabContent">
+    <div class="tabPanel" id="panel-inventory">
+      <div class="placeholder">
+        <div class="icon">🎒</div>
+        <div class="text">Инвентарь</div>
+        <div class="hint">Скоро здесь будут скины, оружие и кастомизация</div>
+      </div>
+    </div>
+    <div class="tabPanel active" id="panel-play">
+      <div id="agentName">
+        <div class="name">ЗАХАРКА</div>
+        <div class="sub">ОПЕРАТИВНИК • УРОВЕНЬ 1</div>
+      </div>
+      <button id="playBtn" class="menuBtn primary">ИГРАТЬ</button>
+      <button id="netBtn" class="menuBtn net">🌐 ИГРАТЬ ПО СЕТИ</button>
+    </div>
+    <div class="tabPanel" id="panel-shop">
+      <div class="placeholder">
+        <div class="icon">🛒</div>
+        <div class="text">Магазин</div>
+        <div class="hint">Скоро здесь можно будет купить скины, оружие и бусты</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= МОДАЛКА ОНЛАЙН ================= -->
+<div id="netModal">
+  <div id="netPanel">
+    <button class="netClose" id="netClose">✕</button>
+    <h2>🌐 ИГРА ПО СЕТИ</h2>
+
+    <div id="netStatus" class="netStatus">ВЫБЕРИ РЕЖИМ</div>
+
+    <!-- Стартовый экран -->
+    <div class="netView show" id="netStartView">
+      <p>Прямое P2P-соединение через WebRTC. Один игрок создаёт комнату — другой подключается по коду. Публичный PeerJS Cloud используется только для рукопожатия, дальше трафик идёт напрямую между устройствами.</p>
+      <button class="netBtn primary" id="hostBtn">СОЗДАТЬ КОМНАТУ</button>
+      <button class="netBtn full" id="joinBtn">ПОДКЛЮЧИТЬСЯ ПО КОДУ</button>
+    </div>
+
+    <!-- Экран хоста — лобби -->
+    <div class="netView" id="hostView">
+      <h3>КОД КОМНАТЫ</h3>
+      <div class="netCodeBox">
+        <div class="code" id="roomCode">----</div>
+        <div class="hint">Скажи этот код другу</div>
+      </div>
+      <button class="netBtn full" id="copyCodeBtn">📋 КОПИРОВАТЬ КОД</button>
+      <h3>ИГРОКИ</h3>
+      <div id="hostPlayers" style="font-size:13px; color:#aaa;">Ты: <b id="hostName" style="color:#ff8844;">-</b><br>Ожидание гостя...</div>
+      <button class="netBtn back full" id="hostCancelBtn" style="margin-top:14px;">ОТМЕНА</button>
+    </div>
+
+    <!-- Экран гостя — ввод кода -->
+    <div class="netView" id="joinView">
+      <h3>ТВОЙ НИК</h3>
+      <input class="netInput" id="joinName" placeholder="Введи ник" maxlength="12" />
+      <h3>КОД КОМНАТЫ</h3>
+      <input class="netInput" id="joinCode" placeholder="ZAK-XXXX" maxlength="12" style="text-transform:uppercase; font-size:18px; text-align:center; letter-spacing:4px;" />
+      <button class="netBtn primary" id="joinConnectBtn">ПОДКЛЮЧИТЬСЯ</button>
+      <button class="netBtn back full" id="joinCancelBtn" style="margin-top:14px;">ОТМЕНА</button>
+    </div>
+
+    <!-- Создание комнаты — ник -->
+    <div class="netView" id="createNickView">
+      <h3>ТВОЙ НИК</h3>
+      <input class="netInput" id="hostNameInput" placeholder="Введи ник" maxlength="12" />
+      <button class="netBtn primary" id="createRoomBtn">СОЗДАТЬ КОМНАТУ</button>
+      <button class="netBtn back full" id="createBackBtn" style="margin-top:14px;">НАЗАД</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= ИГРОВОЙ UI ================= -->
+<div id="crosshair"></div>
+<div id="damageFlash"></div>
+<div id="leftHalf"></div>
+<div id="rightHalf"></div>
+<div id="stickL"><div class="knob" id="knobL"></div></div>
+<div id="hud">HP: <span id="hp">100</span></div>
+<div id="netBadge"></div>
+<div id="otherHud">
+  <div class="otherName" id="otherName">-</div>
+  <div>HP: <span class="otherHp" id="otherHp">100</span></div>
+</div>
+<div id="killfeed"></div>
+<div id="jump">JUMP</div>
+<div id="fire">FIRE</div>
+<button id="exitBtn">← В МЕНЮ</button>
+
+<div id="deathOverlay">
+  <h2>ТЫ СДОХ</h2>
+  <div class="stats">Убит: <b id="deathKiller">-</b></div>
+  <button id="deathMenu">В МЕНЮ</button>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ============================================================
+   РЕЖИМЫ
+   ============================================================ */
+const MODE = { MENU: 0, PLAY: 1 };
+let mode = MODE.MENU;
+
+/* ============================================================
+   ТАБЫ
+   ============================================================ */
+const menuEl = document.getElementById('menu');
+const tabs = document.querySelectorAll('.tab');
+const panels = {
+  inventory: document.getElementById('panel-inventory'),
+  play:      document.getElementById('panel-play'),
+  shop:      document.getElementById('panel-shop'),
+};
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const name = tab.dataset.tab;
+    tabs.forEach(t => t.classList.toggle('active', t === tab));
+    Object.keys(panels).forEach(k => panels[k].classList.toggle('active', k === name));
+  });
+});
+
+/* ============================================================
+   КОНСТАНТЫ
+   ============================================================ */
+const FLOOR = 60;
+const PLAYER_HEIGHT = 1.6;
+const GRAVITY = -22;
+const JUMP_VELOCITY = 8.0;
+const PLAYER_SPEED = 8;
+const PLAYER_RADIUS = 0.4;
+
+const TICK_RATE = 30;                      // снимков/сек
+const TICK_MS = 1000 / TICK_RATE;
+
+/* ============================================================
+   THREE.JS СЦЕНА
+   ============================================================ */
+let scene, camera, renderer, clock;
+let colliders = [], tracers = [];
+let raycaster;
+let player, remotePlayer;                  // player = мы, remotePlayer = другой игрок
+let platforms = [];
+
+const scoreEl = document.getElementById('score');
+const hpEl = document.getElementById('hp');
+const dmgFlash = document.getElementById('damageFlash');
+const netBadge = document.getElementById('netBadge');
+const otherName = document.getElementById('otherName');
+const otherHp = document.getElementById('otherHp');
+const killfeed = document.getElementById('killfeed');
+
+const menuCam = {
+  angle: 0, speed: 0.12, radius: 14, height: 3.2,
+  centerX: 0, centerZ: 18, pitch: -0.05,
+};
+
+/* ============================================================
+   P2P СОСТОЯНИЕ
+   ============================================================ */
+const net = {
+  peer: null,           // PeerJS instance
+  conn: null,           // DataConnection
+  isHost: false,
+  isOnline: false,
+  myName: 'Игрок',
+  otherName: 'Другой',
+  roomCode: null,
+  connected: false,
+  // для хоста — last received input from guest
+  guestInput: { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false },
+  // для гостя — последний снимок от хоста
+  lastSnapshot: null,
+  lastSnapshotTime: 0,
+  // для хоста — HP игроков
+  hostHp: 100,
+  guestHp: 100,
+  // для гостя — interpolated remote state
+  interpRemote: null,
+  interpHost: null,
+};
+
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ СЦЕНЫ
+   ============================================================ */
+function initScene() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87a0b8);
+  scene.fog = new THREE.Fog(0x87a0b8, 35, 95);
+
+  camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 500);
+  renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  document.getElementById('game').appendChild(renderer.domElement);
+
+  clock = new THREE.Clock();
+  raycaster = new THREE.Raycaster();
+  raycaster.far = 120;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444466, 1.0));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+  sun.position.set(20, 40, 15);
+  scene.add(sun);
+
+  // пол
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(FLOOR*2, FLOOR*2),
+    new THREE.MeshStandardMaterial({ color:0x556b4a, roughness:1 })
+  );
+  floor.rotation.x = -Math.PI/2;
+  scene.add(floor);
+  const grid = new THREE.GridHelper(FLOOR*2, 60, 0x333333, 0x333333);
+  grid.position.y = 0.01;
+  scene.add(grid);
+
+  // периметр
+  addBox(0, 0, -FLOOR, FLOOR*2, 5, 1, 0x5a4a3a);
+  addBox(0, 0,  FLOOR, FLOOR*2, 5, 1, 0x5a4a3a);
+  addBox(-FLOOR, 0, 0, 1, 5, FLOOR*2, 0x5a4a3a);
+  addBox( FLOOR, 0, 0, 1, 5, FLOOR*2, 0x5a4a3a);
+
+  // стены
+  const walls = [
+    [-25, -20, 1, 40, 4], [ 25,  20, 1, 40, 4],
+    [-10,   0, 30, 1, 4], [ 10, -30, 1, 30, 4],
+    [  0,  35, 40, 1, 4], [-35,  10, 20, 1, 4], [ 35, -10, 20, 1, 4],
+    [-30, -40, 1, 15, 3.5], [ 30,  40, 1, 15, 3.5],
+    [-45,  30, 10, 1, 3.5], [ 45, -30, 10, 1, 3.5],
+    [-20,  15, 15, 1, 3], [ 20, -15, 15, 1, 3],
+    [  5,  20, 1, 20, 3], [ -5, -20, 1, 20, 3],
+    [-40,  -5, 1, 20, 3.5], [ 40,   5, 1, 20, 3.5],
+  ];
+  walls.forEach(([x, z, w, d, h], i) => addBox(x, 0, z, w, h, d, i%2 ? 0x7a6a5a : 0x9a8a6a));
+
+  // платформы
+  platforms = [
+    [  0, 0,  18, 3, 1.0, 3], [  4, 0,  14, 3, 1.6, 3], [  8, 0,  10, 3, 2.2, 3],
+    [ 12, 0,  14, 3, 2.8, 3], [ 16, 0,  18, 3, 2.2, 3], [ 20, 0,  14, 3, 1.6, 3],
+    [-42, 0,  18, 2.5, 1.0, 2.5], [-38, 0,  14, 2.5, 1.5, 2.5], [-34, 0,  10, 2.5, 2.0, 2.5],
+    [-38, 0,   6, 2.5, 2.5, 2.5], [-42, 0,   2, 2.5, 2.0, 2.5],
+    [ 42, 0, -18, 2.5, 1.0, 2.5], [ 38, 0, -14, 2.5, 1.5, 2.5], [ 34, 0, -10, 2.5, 2.0, 2.5],
+    [ 38, 0,  -6, 2.5, 2.5, 2.5],
+    [ -8, 0,  42, 2.5, 1.2, 2.5], [ -4, 0,  38, 2.5, 1.8, 2.5], [  0, 0,  42, 2.5, 2.2, 2.5],
+    [  4, 0,  38, 2.5, 1.8, 2.5], [  8, 0,  42, 2.5, 1.2, 2.5],
+    [ -8, 0, -38, 2.5, 1.0, 2.5], [ -4, 0, -34, 2.5, 1.8, 2.5], [  0, 0, -38, 2.5, 2.5, 2.5],
+    [  4, 0, -34, 2.5, 1.8, 2.5], [  8, 0, -38, 2.5, 1.0, 2.5],
+    [-15, 0, -18, 2, 2.5, 2], [ 15, 0,  18, 2, 2.5, 2],
+    [-20, 0,  30, 2, 3.0, 2], [ 20, 0, -30, 2, 3.0, 2],
+    [ 25, 0,  35, 2, 1.5, 2], [ 30, 0,  32, 2, 2.0, 2], [ 35, 0,  35, 2, 1.5, 2],
+  ];
+  platforms.forEach(([x, y, z, w, h, d]) => {
+    const c = h < 1.3 ? 0x8a9aaa : h < 2 ? 0x9a8a6a : h < 2.5 ? 0xaa7a5a : 0xaa5a4a;
+    addBox(x, y, z, w, h, d, c, true);
+  });
+
+  // игрок
+  player = {
+    pos: new THREE.Vector3(0, 0, 25),
+    vy: 0, yaw: Math.PI, pitch: 0,
+    hp: 100, alive: true,
+    onGround: true, coyoteTimer: 0,
+    firePressed: false,
+    lastShotTime: 0,
+  };
+
+  // удалённый игрок (модель)
+  remotePlayer = createRemotePlayerModel();
+  remotePlayer.group.visible = false;
+  scene.add(remotePlayer.group);
+
+  // resize
+  addEventListener('resize', () => {
+    if (!camera) return;
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+}
+
+/* ========== УДАЛЁННЫЙ ИГРОК — МОДЕЛЬ ========== */
+function createRemotePlayerModel() {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color:0x4488dd, roughness:0.6, emissive:0x112244 });
+  const headMat = new THREE.MeshStandardMaterial({ color:0xffaa66, roughness:0.6, emissive:0x221100 });
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 1.4, 10), bodyMat);
+  torso.position.y = 1.2; g.add(torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 8), headMat);
+  head.position.y = 2.2; g.add(head);
+  const gun = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.9, 6),
+                              new THREE.MeshStandardMaterial({ color:0x222222 }));
+  gun.rotation.x = Math.PI/2; gun.position.set(0.45, 1.4, -0.5); g.add(gun);
+  const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.5, 10),
+                              new THREE.MeshStandardMaterial({color:0x333333}));
+  legs.position.y = 0.25; g.add(legs);
+  // хитбоксы
+  const hitHead = new THREE.Mesh(new THREE.SphereGeometry(0.42, 6, 5),
+                                 new THREE.MeshBasicMaterial({visible:false}));
+  hitHead.position.y = 2.2;
+  hitHead.userData = { part:'head' };
+  g.add(hitHead);
+  const hitBody = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.9, 6),
+                                 new THREE.MeshBasicMaterial({visible:false}));
+  hitBody.position.y = 1.05;
+  hitBody.userData = { part:'body' };
+  g.add(hitBody);
+  // нейм-таг
+  const tagCanvas = document.createElement('canvas');
+  tagCanvas.width = 256; tagCanvas.height = 64;
+  const tagTex = new THREE.CanvasTexture(tagCanvas);
+  const tagSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map:tagTex, transparent:true, depthTest:false }));
+  tagSprite.position.y = 2.9;
+  tagSprite.scale.set(2, 0.5, 1);
+  g.add(tagSprite);
+
+  return { group:g, hitHead, hitBody, tagCanvas, tagTex, tagSprite };
+}
+
+function updateRemoteTag(name) {
+  if (!remotePlayer) return;
+  const ctx = remotePlayer.tagCanvas.getContext('2d');
+  ctx.clearRect(0, 0, 256, 64);
+  ctx.fillStyle = '#000';
+  ctx.globalAlpha = 0.5;
+  ctx.fillRect(0, 0, 256, 64);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#ff8888';
+  ctx.font = 'bold 36px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name, 128, 32);
+  remotePlayer.tagTex.needsUpdate = true;
+}
+
+/* ============================================================
+   ХЕЛПЕРЫ КОЛЛИЗИЙ
+   ============================================================ */
+const _testBox = new THREE.Box3();
+const _min = new THREE.Vector3();
+const _max = new THREE.Vector3();
+
+function addBox(x, y, z, w, h, d, color=0x8a6a4a, isPlatform=false) {
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mat = new THREE.MeshStandardMaterial({ color, roughness:0.9 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, y + h/2, z);
+  scene.add(mesh);
+  const box = new THREE.Box3().setFromObject(mesh);
+  colliders.push({ box, mesh, isPlatform });
+}
+
+function canExistAt(nx, nz, y, radius) {
+  if (Math.abs(nx) > FLOOR-1 || Math.abs(nz) > FLOOR-1) return false;
+  _min.set(nx - radius, y + 0.02, nz - radius);
+  _max.set(nx + radius, y + PLAYER_HEIGHT, nz + radius);
+  _testBox.min.copy(_min); _testBox.max.copy(_max);
+  for (let i = 0; i < colliders.length; i++) {
+    if (_testBox.intersectsBox(colliders[i].box)) return false;
+  }
+  return true;
+}
+
+function groundHeightAt(nx, nz, fromY, radius) {
+  let best = 0;
+  const r = radius * 0.8;
+  for (let i = 0; i < colliders.length; i++) {
+    const b = colliders[i].box;
+    if (nx + r < b.min.x || nx - r > b.max.x) continue;
+    if (nz + r < b.min.z || nz - r > b.max.z) continue;
+    const top = b.max.y;
+    if (top <= fromY + 0.05 && top > best) best = top;
+  }
+  return best;
+}
+
+/* ============================================================
+   ФИЗИКА ИГРОКА (универсальная — для локального и удалённого)
+   ============================================================ */
+function stepPlayerPhysics(state, moveInput, dt) {
+  // state = { pos:{x,y,z}, vy, onGround, coyoteTimer, yaw, pitch }
+  const yaw = state.yaw;
+  const forwardX = -Math.sin(yaw);
+  const forwardZ = -Math.cos(yaw);
+  const rightX = Math.cos(yaw);
+  const rightZ = -Math.sin(yaw);
+
+  let mvX = rightX * moveInput.moveX + forwardX * (-moveInput.moveY);
+  let mvZ = rightZ * moveInput.moveX + forwardZ * (-moveInput.moveY);
+  const mlen = Math.hypot(mvX, mvZ);
+  if (mlen > 1) { mvX /= mlen; mvZ /= mlen; }
+
+  const step = PLAYER_SPEED * dt;
+  const nx = state.pos.x + mvX * step;
+  const nz = state.pos.z + mvZ * step;
+
+  if (canExistAt(nx, state.pos.z, state.pos.y, PLAYER_RADIUS)) state.pos.x = nx;
+  if (canExistAt(state.pos.x, nz, state.pos.y, PLAYER_RADIUS)) state.pos.z = nz;
+
+  state.vy += GRAVITY * dt;
+  let ny = state.pos.y + state.vy * dt;
+  const groundY = groundHeightAt(state.pos.x, state.pos.z, state.pos.y, PLAYER_RADIUS);
+
+  if (ny <= groundY) {
+    ny = groundY; state.vy = 0; state.onGround = true; state.coyoteTimer = 0;
+  } else {
+    if (state.vy > 0 && !canExistAt(state.pos.x, state.pos.z, ny, PLAYER_RADIUS)) {
+      let ceilY = Infinity;
+      for (let i = 0; i < colliders.length; i++) {
+        const b = colliders[i].box;
+        if (state.pos.x + PLAYER_RADIUS < b.min.x || state.pos.x - PLAYER_RADIUS > b.max.x) continue;
+        if (state.pos.z + PLAYER_RADIUS < b.min.z || state.pos.z - PLAYER_RADIUS > b.max.z) continue;
+        if (b.min.y > state.pos.y + 0.1 && b.min.y < ceilY) ceilY = b.min.y;
+      }
+      if (ceilY !== Infinity) ny = Math.min(ny, ceilY - PLAYER_HEIGHT);
+      state.vy = 0;
+    }
+    state.onGround = false;
+    if (state.coyoteTimer > 0) state.coyoteTimer -= dt;
+  }
+  state.pos.y = ny;
+}
+
+function tryJump(state) {
+  if (state.onGround || state.coyoteTimer > 0) {
+    state.vy = JUMP_VELOCITY;
+    state.onGround = false;
+    state.coyoteTimer = 0;
+    return true;
+  }
+  return false;
+}
+
+/* ============================================================
+   УПРАВЛЕНИЕ (левая половина — движение, правая — обзор)
+   ============================================================ */
+const input = { moveX: 0, moveY: 0, fire: false };
+const LOOK_SENS = 0.006;
+const STICK_RADIUS = 60, STICK_DEADZONE = 3;
+const leftHalf = document.getElementById('leftHalf');
+const rightHalf = document.getElementById('rightHalf');
+const stickL = document.getElementById('stickL');
+const knobL = document.getElementById('knobL');
+
+const moveTouch = { id: null, originX: 0, originY: 0, active: false };
+leftHalf.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (moveTouch.active) return;
+  const t = e.changedTouches[0];
+  moveTouch.id = t.identifier;
+  moveTouch.originX = t.clientX; moveTouch.originY = t.clientY;
+  moveTouch.active = true;
+  stickL.style.left = t.clientX + 'px';
+  stickL.style.top = t.clientY + 'px';
+  stickL.style.bottom = 'auto'; stickL.style.right = 'auto';
+  stickL.classList.add('active');
+  knobL.style.transform = 'translate(0,0)';
+  input.moveX = 0; input.moveY = 0;
+}, { passive:false });
+leftHalf.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!moveTouch.active) return;
+  for (const t of e.changedTouches) {
+    if (t.identifier !== moveTouch.id) continue;
+    let dx = t.clientX - moveTouch.originX;
+    let dy = t.clientY - moveTouch.originY;
+    const len = Math.hypot(dx, dy);
+    if (len < STICK_DEADZONE) {
+      input.moveX = 0; input.moveY = 0;
+      knobL.style.transform = 'translate(0,0)';
+      break;
+    }
+    if (len > STICK_RADIUS) { const k = STICK_RADIUS / len; dx *= k; dy *= k; }
+    knobL.style.transform = `translate(${dx}px, ${dy}px)`;
+    input.moveX = dx / STICK_RADIUS;
+    input.moveY = dy / STICK_RADIUS;
+    break;
+  }
+}, { passive:false });
+const endMove = e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === moveTouch.id) {
+      moveTouch.active = false; moveTouch.id = null;
+      input.moveX = 0; input.moveY = 0;
+      stickL.classList.remove('active');
+      knobL.style.transform = 'translate(0,0)';
+      break;
+    }
+  }
+};
+leftHalf.addEventListener('touchend', endMove, { passive:false });
+leftHalf.addEventListener('touchcancel', endMove, { passive:false });
+
+const lookTouch = { id: null, lastX: 0, lastY: 0, active: false };
+rightHalf.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (lookTouch.active) return;
+  const t = e.changedTouches[0];
+  lookTouch.id = t.identifier;
+  lookTouch.lastX = t.clientX; lookTouch.lastY = t.clientY;
+  lookTouch.active = true;
+}, { passive:false });
+rightHalf.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!lookTouch.active || !player || !player.alive) return;
+  for (const t of e.changedTouches) {
+    if (t.identifier !== lookTouch.id) continue;
+    const dx = t.clientX - lookTouch.lastX;
+    const dy = t.clientY - lookTouch.lastY;
+    lookTouch.lastX = t.clientX; lookTouch.lastY = t.clientY;
+    player.yaw -= dx * LOOK_SENS;
+    player.pitch -= dy * LOOK_SENS;
+    player.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, player.pitch));
+    break;
+  }
+}, { passive:false });
+const endLook = e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === lookTouch.id) { lookTouch.active = false; lookTouch.id = null; break; }
+  }
+};
+rightHalf.addEventListener('touchend', endLook, { passive:false });
+rightHalf.addEventListener('touchcancel', endLook, { passive:false });
+
+const jumpBtn = document.getElementById('jump');
+jumpBtn.addEventListener('touchstart', e => {
+  e.preventDefault(); e.stopPropagation();
+  if (mode === MODE.PLAY && player.alive) tryJump(player);
+}, { passive:false });
+jumpBtn.addEventListener('mousedown', () => {
+  if (mode === MODE.PLAY && player.alive) tryJump(player);
+});
+
+const fireBtn = document.getElementById('fire');
+fireBtn.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); input.fire = true; }, { passive:false });
+fireBtn.addEventListener('touchend',   e => { e.preventDefault(); e.stopPropagation(); input.fire = false; }, { passive:false });
+fireBtn.addEventListener('touchcancel',e => { e.preventDefault(); e.stopPropagation(); input.fire = false; }, { passive:false });
+fireBtn.addEventListener('mousedown',  () => input.fire = true);
+fireBtn.addEventListener('mouseup',    () => input.fire = false);
+
+/* ============================================================
+   СТРЕЛЬБА
+   ============================================================ */
+const SHOT_COOLDOWN = 110;
+
+function tryShoot() {
+  if (!player.alive) return;
+  const now = performance.now();
+  if (now - player.lastShotTime < SHOT_COOLDOWN) return;
+  player.lastShotTime = now;
+
+  const shootDir = new THREE.Vector3();
+  const origin = new THREE.Vector3();
+  camera.getWorldDirection(shootDir);
+  camera.getWorldPosition(origin);
+
+  // клиентский рейкаст — против стен и модели удалённого игрока
+  const targets = [];
+  if (remotePlayer.group.visible) {
+    targets.push(remotePlayer.hitHead, remotePlayer.hitBody);
+  }
+  for (let i = 0; i < colliders.length; i++) targets.push(colliders[i].mesh);
+
+  raycaster.set(origin, shootDir);
+  const hits = raycaster.intersectObjects(targets, false);
+  const first = hits[0];
+  const end = first ? first.point.clone() : origin.clone().add(shootDir.clone().multiplyScalar(80));
+  spawnTracer(origin, end, 0xffaa00);
+
+  if (!first) return;
+
+  const isRemoteHit = first.object.userData.part &&
+                      (first.object === remotePlayer.hitHead || first.object === remotePlayer.hitBody);
+  if (isRemoteHit) {
+    const part = first.object.userData.part;
+    const dmg = part === 'head' ? 80 : 25;
+    flashHit(first.point, part === 'head');
+    // гость шлёт хосту hit-событие; хост валидирует
+    if (net.isOnline) {
+      if (net.isHost) {
+        // я хост — я авторитет, применяю урон
+        applyDamageToGuest(dmg, part === 'head');
+      } else {
+        // я гость — шлю hit хосту
+        net.conn.send({ t:'hit', dmg, head: part === 'head' });
+      }
+    }
+  }
+}
+
+function spawnTracer(a, b, color) {
+  const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
+  const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.9 });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line);
+  tracers.push({ line, born: performance.now() });
+}
+function flashHit(pos, head) {
+  const geo = new THREE.SphereGeometry(head ? 0.35 : 0.2, 6, 4);
+  const mat = new THREE.MeshBasicMaterial({ color: head ? 0xff0000 : 0xffff00, transparent:true });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.copy(pos);
+  scene.add(m);
+  tracers.push({ line:m, born: performance.now(), isFlash:true });
+}
+
+/* ============================================================
+   УРОН
+   ============================================================ */
+function applyDamageToGuest(dmg, head) {
+  // только хост вызывает это
+  if (!net.isHost) return;
+  net.guestHp -= dmg;
+  if (net.guestHp < 0) net.guestHp = 0;
+  net.conn.send({ t:'hp', guest: net.guestHp, host: net.hostHp });
+  addKillfeed(`${net.myName} ${head ? 'в голову' : ''} → ${net.otherName}`, head ? '#ff4444' : '#ffaa44');
+  if (net.guestHp <= 0) {
+    // раунд хоста выигран
+    net.conn.send({ t:'kill', killer: net.myName, victim: net.otherName });
+    showDeathScreen(net.otherName, net.myName);
+  }
+}
+
+function applyDamageToHost(dmg, head) {
+  // гость шлёт, хост авторитетно применяет
+  // на самом деле гость не должен вызывать эту — только хосту приходит hit
+  // но сервер-хост — это net.hostHp -= dmg
+  net.hostHp -= dmg;
+  if (net.hostHp < 0) net.hostHp = 0;
+  net.conn.send({ t:'hp', guest: net.guestHp, host: net.hostHp });
+  addKillfeed(`${net.otherName} ${head ? 'в голову' : ''} → ${net.myName}`, head ? '#ff4444' : '#ffaa44');
+  if (net.hostHp <= 0) {
+    net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
+    showDeathScreen(net.myName, net.otherName);
+  }
+}
+
+function showDeathScreen(victim, killer) {
+  if (victim !== net.myName) return; // показываем только если мы умерли
+  document.getElementById('deathKiller').textContent = killer;
+  document.getElementById('deathOverlay').classList.add('show');
+  player.alive = false;
+  input.fire = false;
+  input.moveX = 0; input.moveY = 0;
+}
+
+/* ============================================================
+   KILLFEED
+   ============================================================ */
+function addKillfeed(text, color='#fff') {
+  const el = document.createElement('div');
+  el.className = 'killMsg';
+  el.textContent = text;
+  el.style.color = color;
+  killfeed.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+/* ============================================================
+   P2P — PeerJS
+   ============================================================ */
+function setNetStatus(text, cls) {
+  const el = document.getElementById('netStatus');
+  el.textContent = text;
+  el.className = 'netStatus' + (cls ? ' ' + cls : '');
+}
+function showView(viewId) {
+  document.querySelectorAll('.netView').forEach(v => v.classList.remove('show'));
+  document.getElementById(viewId).classList.add('show');
+}
+function genRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return 'zak' + s.toLowerCase();
+}
+function displayRoomCode(code) {
+  return code.replace('zak', '').toUpperCase();
+}
+
+function createRoom() {
+  const nick = (document.getElementById('hostNameInput').value || 'Хост').trim().slice(0, 12);
+  if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
+  net.myName = nick;
+  net.isHost = true;
+  net.roomCode = genRoomCode();
+
+  setNetStatus('СОЗДАНИЕ КОМНАТЫ...', 'wait');
+  net.peer = new Peer(net.roomCode, {
+    config: { iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' },
+    ]}
+  });
+
+  net.peer.on('open', (id) => {
+    setNetStatus('ЖДЁМ ПОДКЛЮЧЕНИЯ ГОСТЯ...', 'wait');
+    showView('hostView');
+    document.getElementById('roomCode').textContent = displayRoomCode(net.roomCode);
+    document.getElementById('hostName').textContent = nick;
+    document.getElementById('hostPlayers').innerHTML =
+      `Ты: <b style="color:#ff8844;">${nick}</b><br>Ожидание гостя...`;
+  });
+
+  net.peer.on('connection', (conn) => {
+    net.conn = conn;
+    conn.on('open', () => {
+      net.connected = true;
+      // ждём первое сообщение от гостя с ником
+    });
+    conn.on('data', handlePeerData);
+    conn.on('close', () => {
+      if (mode === MODE.PLAY) {
+        alert('Соединение разорвано');
+        exitToMenu();
+      }
+    });
+    conn.on('error', (err) => {
+      console.error('Conn error:', err);
+    });
+  });
+
+  net.peer.on('error', (err) => {
+    console.error('Peer error:', err);
+    if (err.type === 'unavailable-id') {
+      setNetStatus('КОД ЗАНЯТ, ПОПРОБУЙ ЕЩЁ РАЗ', 'err');
+    } else {
+      setNetStatus('ОШИБКА: ' + err.type, 'err');
+    }
+  });
+}
+
+function joinRoom() {
+  const nick = (document.getElementById('joinName').value || 'Гость').trim().slice(0, 12);
+  let code = (document.getElementById('joinCode').value || '').trim().toLowerCase();
+  if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
+  if (!code) { setNetStatus('ВВЕДИ КОД', 'err'); return; }
+  code = 'zak' + code.replace('zak', '');
+
+  net.myName = nick;
+  net.isHost = false;
+
+  setNetStatus('ПОДКЛЮЧЕНИЕ...', 'wait');
+
+  net.peer = new Peer(null, {
+    config: { iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' },
+    ]}
+  });
+
+  net.peer.on('open', () => {
+    net.conn = net.peer.connect(code, { reliable: false });
+    net.conn.on('open', () => {
+      net.connected = true;
+      net.conn.send({ t:'hello', name: nick });
+    });
+    net.conn.on('data', handlePeerData);
+    net.conn.on('close', () => {
+      if (mode === MODE.PLAY) {
+        alert('Соединение разорвано');
+        exitToMenu();
+      } else {
+        setNetStatus('НЕ УДАЛОСЬ ПОДКЛЮЧИТЬСЯ', 'err');
+      }
+    });
+    net.conn.on('error', (err) => {
+      console.error('Conn error:', err);
+      setNetStatus('ОШИБКА ПОДКЛЮЧЕНИЯ', 'err');
+    });
+  });
+
+  net.peer.on('error', (err) => {
+    console.error('Peer error:', err);
+    if (err.type === 'peer-unavailable') {
+      setNetStatus('КОМНАТА НЕ НАЙДЕНА', 'err');
+    } else {
+      setNetStatus('ОШИБКА: ' + err.type, 'err');
+    }
+  });
+}
+
+function handlePeerData(data) {
+  if (!data || !data.t) return;
+
+  if (data.t === 'hello') {
+    // хост получает hello от гостя — гость подключился
+    if (net.isHost) {
+      net.otherName = data.name;
+      otherName.textContent = net.otherName;
+      net.conn.send({ t:'welcome', name: net.myName });
+      setNetStatus('ПОДКЛЮЧЕНО!', 'ok');
+      document.getElementById('hostPlayers').innerHTML =
+        `Ты: <b style="color:#ff8844;">${net.myName}</b><br>Гость: <b style="color:#88ddff;">${net.otherName}</b>`;
+      // ждём 800мс чтобы гость получил welcome, потом стартуем
+      setTimeout(() => { enterOnlineGame(); }, 400);
+    }
+  }
+  else if (data.t === 'welcome') {
+    // гость получает welcome — хост готов
+    if (!net.isHost) {
+      net.otherName = data.name;
+      otherName.textContent = net.otherName;
+      setNetStatus('ПОДКЛЮЧЕНО!', 'ok');
+    }
+  }
+  else if (data.t === 'input') {
+    // хост получает инпут гостя
+    if (net.isHost) {
+      net.guestInput.moveX = data.mx;
+      net.guestInput.moveY = data.my;
+      net.guestInput.yaw = data.yaw;
+      net.guestInput.pitch = data.pitch;
+      net.guestInput.fire = data.fire;
+    }
+  }
+  else if (data.t === 'state') {
+    // гость получает снимок состояния от хоста
+    if (!net.isHost) {
+      net.lastSnapshot = data;
+      net.lastSnapshotTime = performance.now();
+    }
+  }
+  else if (data.t === 'hit') {
+    // хост получает hit от гостя — валидирует и применяет урон ХОСТУ
+    if (net.isHost) {
+      applyDamageToHost(data.dmg, data.head);
+    }
+  }
+  else if (data.t === 'hp') {
+    // гость получает HP-апдейт
+    if (!net.isHost) {
+      net.hostHp = data.host;
+      net.guestHp = data.guest;
+      otherHp.textContent = data.host;
+      hpEl.textContent = data.guest;
+    }
+  }
+  else if (data.t === 'kill') {
+    // кто-то умер
+    if (!net.isHost) {
+      if (data.victim === net.myName) {
+        document.getElementById('deathKiller').textContent = data.killer;
+        document.getElementById('deathOverlay').classList.add('show');
+        player.alive = false;
+        input.fire = false;
+      }
+      addKillfeed(`${data.killer} → ${data.victim}`, '#ff4444');
+    }
+  }
+}
+
+function enterOnlineGame() {
+  mode = MODE.PLAY;
+  net.isOnline = true;
+
+  // респавн в противоположных углах
+  player.pos.set(0, 0, 25);
+  player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
+  player.hp = 100; player.alive = true;
+  player.onGround = true;
+
+  net.hostHp = 100;
+  net.guestHp = 100;
+
+  // модель удалённого игрока в противоположной точке
+  remotePlayer.group.visible = true;
+  remotePlayer.group.position.set(0, 0, -25);
+  remotePlayer.group.rotation.y = 0;
+  updateRemoteTag(net.otherName);
+
+  // UI
+  menuEl.classList.add('hidden');
+  document.getElementById('netModal').classList.remove('show');
+  document.body.classList.add('ingame');
+
+  netBadge.textContent = net.isHost ? '👑 ХОСТ' : '👤 ГОСТЬ';
+  netBadge.className = net.isHost ? 'host' : '';
+  otherName.textContent = net.otherName;
+  otherHp.textContent = 100;
+  hpEl.textContent = 100;
+
+  clock.getDelta();
+
+  // запуск тика синхронизации
+  startNetTick();
+}
+
+/* ============================================================
+   СЕТЕВОЙ ТИК
+   ============================================================ */
+let netTickInterval = null;
+let guestInputAccum = { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false };
+
+function startNetTick() {
+  if (netTickInterval) clearInterval(netTickInterval);
+
+  if (net.isHost) {
+    // ХОСТ: физика обоих + рассылка снимков
+    netTickInterval = setInterval(() => {
+      if (!net.connected || mode !== MODE.PLAY) return;
+
+      // физика гостя на основе последнего инпута
+      const guestState = {
+        pos: remotePlayer.group.position,
+        vy: remotePlayer._vy || 0,
+        yaw: net.guestInput.yaw,
+        pitch: net.guestInput.pitch,
+        onGround: remotePlayer._onGround !== false,
+        coyoteTimer: 0,
+      };
+      stepPlayerPhysics(guestState, net.guestInput, TICK_MS / 1000);
+      remotePlayer._vy = guestState.vy;
+      remotePlayer._onGround = guestState.onGround;
+      remotePlayer.group.rotation.y = guestState.yaw;
+
+      // выстрел гостя — рисуем трассер у себя если он стрелял
+      if (net.guestInput.fire) {
+        // простая проверка — не чаще раза в 110мс
+        const now = performance.now();
+        if (!remotePlayer._lastShot || now - remotePlayer._lastShot > 110) {
+          remotePlayer._lastShot = now;
+          // визуальный трассер от гостя в нашу сторону
+          const from = remotePlayer.group.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+          const to = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0));
+          // с рандомным промахом
+          if (Math.random() < 0.5) to.x += (Math.random()-0.5) * 2;
+          if (Math.random() < 0.5) to.z += (Math.random()-0.5) * 2;
+          spawnTracer(from, to, 0xff6644);
+        }
+      }
+
+      // снимок состояния
+      net.conn.send({
+        t: 'state',
+        host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, pitch: player.pitch, alive: player.alive },
+        guest: { x: remotePlayer.group.position.x, y: remotePlayer.group.position.y, z: remotePlayer.group.position.z, yaw: remotePlayer.group.rotation.y, alive: net.guestHp > 0 },
+      });
+    }, TICK_MS);
+  } else {
+    // ГОСТЬ: отправка инпута + интерполяция удалённых позиций
+    netTickInterval = setInterval(() => {
+      if (!net.connected || mode !== MODE.PLAY) return;
+
+      net.conn.send({
+        t: 'input',
+        mx: input.moveX,
+        my: input.moveY,
+        yaw: player.yaw,
+        pitch: player.pitch,
+        fire: input.fire,
+      });
+
+      // применяем снимок хоста
+      const snap = net.lastSnapshot;
+      if (!snap) return;
+
+      // хост (наш противник)
+      const targetHost = snap.host;
+      const cp = remotePlayer.group.position;
+      // интерполяция позиции хоста
+      cp.x += (targetHost.x - cp.x) * 0.3;
+      cp.y += (targetHost.y - cp.y) * 0.3;
+      cp.z += (targetHost.z - cp.z) * 0.3;
+      remotePlayer.group.rotation.y += (targetHost.yaw - remotePlayer.group.rotation.y) * 0.3;
+      remotePlayer.group.visible = targetHost.alive !== false;
+
+      // обновление HP-бара противника (уже приходит отдельным сообщением)
+    }, TICK_MS);
+  }
+}
+
+function stopNetTick() {
+  if (netTickInterval) {
+    clearInterval(netTickInterval);
+    netTickInterval = null;
+  }
+}
+
+/* ============================================================
+   UI-ОБРАБОТЧИКИ МОДАЛКИ
+   ============================================================ */
+const netModal = document.getElementById('netModal');
+document.getElementById('netBtn').addEventListener('click', () => {
+  netModal.classList.add('show');
+  setNetStatus('ВЫБЕРИ РЕЖИМ', '');
+  showView('netStartView');
+});
+document.getElementById('netClose').addEventListener('click', () => {
+  if (net.peer) { try { net.peer.destroy(); } catch(e){} net.peer = null; }
+  if (net.conn) { try { net.conn.close(); } catch(e){} net.conn = null; }
+  net.connected = false;
+  netModal.classList.remove('show');
+});
+
+document.getElementById('hostBtn').addEventListener('click', () => {
+  setNetStatus('ВВЕДИ НИК', '');
+  showView('createNickView');
+  document.getElementById('hostNameInput').focus();
+});
+document.getElementById('createRoomBtn').addEventListener('click', createRoom);
+document.getElementById('createBackBtn').addEventListener('click', () => showView('netStartView'));
+
+document.getElementById('joinBtn').addEventListener('click', () => {
+  setNetStatus('ВВЕДИ КОД КОМНАТЫ', '');
+  showView('joinView');
+  document.getElementById('joinCode').focus();
+});
+document.getElementById('joinConnectBtn').addEventListener('click', joinRoom);
+document.getElementById('joinCancelBtn').addEventListener('click', () => showView('netStartView'));
+
+document.getElementById('copyCodeBtn').addEventListener('click', () => {
+  const code = displayRoomCode(net.roomCode);
+  navigator.clipboard.writeText(code).then(() => {
+    document.getElementById('copyCodeBtn').textContent = '✓ СКОПИРОВАНО';
+    setTimeout(() => document.getElementById('copyCodeBtn').textContent = '📋 КОПИРОВАТЬ КОД', 1500);
+  }).catch(() => {
+    document.getElementById('copyCodeBtn').textContent = code + ' (скопируй вручную)';
+  });
+});
+document.getElementById('hostCancelBtn').addEventListener('click', () => {
+  if (net.peer) { try { net.peer.destroy(); } catch(e){} net.peer = null; }
+  if (net.conn) { try { net.conn.close(); } catch(e){} net.conn = null; }
+  net.connected = false;
+  showView('netStartView');
+  setNetStatus('ОТМЕНЕНО', '');
+});
+
+/* ============================================================
+   ПЕРЕХОДЫ
+   ============================================================ */
+function startSoloGame() {
+  mode = MODE.PLAY;
+  net.isOnline = false;
+  menuEl.classList.add('hidden');
+  document.body.classList.add('ingame');
+  remotePlayer.group.visible = false;
+  netBadge.textContent = 'ОДИНОЧНЫЙ';
+  netBadge.className = '';
+  netBadge.style.display = 'block';
+  otherHud.style.display = 'none';
+
+  player.pos.set(0, 0, 25);
+  player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
+  player.hp = 100; player.alive = true;
+  player.onGround = true;
+  hpEl.textContent = 100;
+  input.fire = false; input.moveX = 0; input.moveY = 0;
+  clock.getDelta();
+}
+
+function exitToMenu() {
+  stopNetTick();
+  document.body.classList.remove('ingame');
+  menuEl.classList.remove('hidden');
+  document.getElementById('deathOverlay').classList.remove('show');
+  mode = MODE.MENU;
+
+  if (net.peer) { try { net.peer.destroy(); } catch(e){} net.peer = null; }
+  if (net.conn) { try { net.conn.close(); } catch(e){} net.conn = null; }
+  net.connected = false;
+  net.isOnline = false;
+  net.isHost = false;
+  net.lastSnapshot = null;
+  remotePlayer.group.visible = false;
+
+  clock.getDelta();
+}
+
+document.getElementById('playBtn').addEventListener('click', startSoloGame);
+document.getElementById('exitBtn').addEventListener('click', exitToMenu);
+document.getElementById('deathMenu').addEventListener('click', exitToMenu);
+
+/* ============================================================
+   ГЛАВНЫЙ ЦИКЛ
+   ============================================================ */
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if (mode === MODE.MENU) {
+    menuCam.angle += menuCam.speed * dt;
+    const x = menuCam.centerX + Math.cos(menuCam.angle) * menuCam.radius;
+    const z = menuCam.centerZ + Math.sin(menuCam.angle) * menuCam.radius;
+    camera.position.set(x, menuCam.height, z);
+    camera.lookAt(menuCam.centerX, menuCam.height + menuCam.pitch, menuCam.centerZ);
+  } else {
+    // физика игрока
+    if (player.alive) {
+      stepPlayerPhysics(player, input, dt);
+      if (input.fire) tryShoot();
+    }
+    // камера
+    const camY = player.pos.y + PLAYER_HEIGHT;
+    camera.position.set(player.pos.x, camY, player.pos.z);
+    const cp = Math.cos(player.pitch);
+    const lookDir = new THREE.Vector3(
+      -Math.sin(player.yaw) * cp,
+       Math.sin(player.pitch),
+      -Math.cos(player.yaw) * cp
+    );
+    camera.lookAt(camera.position.clone().add(lookDir));
+
+    // fadeout tracers
+    const now = performance.now();
+    for (let i = tracers.length-1; i >= 0; i--) {
+      const t = tracers[i];
+      const age = now - t.born;
+      const life = t.isFlash ? 130 : 90;
+      if (age > life) {
+        scene.remove(t.line);
+        t.line.geometry.dispose();
+        t.line.material.dispose();
+        tracers.splice(i, 1);
+      } else {
+        t.line.material.opacity = 1 - age/life;
+      }
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+/* ============================================================
+   КЛАВИАТУРА / МЫШЬ (десктоп)
+   ============================================================ */
+let mouseDown = false;
+addEventListener('keydown', e => {
+  if (mode !== MODE.PLAY) return;
+  if (!player || !player.alive) return;
+  if (e.key === 'w' || e.key === 'W') input.moveY = -1;
+  if (e.key === 's' || e.key === 'S') input.moveY = 1;
+  if (e.key === 'a' || e.key === 'A') input.moveX = -1;
+  if (e.key === 'd' || e.key === 'D') input.moveX = 1;
+  if (e.key === ' ') input.fire = true;
+  if (e.key === 'Shift') tryJump(player);
+});
+addEventListener('keyup', e => {
+  if ((e.key === 'w' || e.key === 'W') && input.moveY === -1) input.moveY = 0;
+  if ((e.key === 's' || e.key === 'S') && input.moveY === 1)  input.moveY = 0;
+  if ((e.key === 'a' || e.key === 'A') && input.moveX === -1) input.moveX = 0;
+  if ((e.key === 'd' || e.key === 'D') && input.moveX === 1)  input.moveX = 0;
+  if (e.key === ' ') input.fire = false;
+});
+addEventListener('mousedown', e => {
+  if (mode !== MODE.PLAY) return;
+  if (e.target.closest('#fire, #jump, #exitBtn, #deathOverlay, #netModal')) return;
+  mouseDown = true;
+});
+addEventListener('mouseup', () => mouseDown = false);
+addEventListener('mousemove', e => {
+  if (!mouseDown || mode !== MODE.PLAY) return;
+  if (!player || !player.alive) return;
+  player.yaw -= e.movementX * LOOK_SENS;
+  player.pitch -= e.movementY * LOOK_SENS;
+  player.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, player.pitch));
+});
+
+/* ============================================================
+   СТАРТ
+   ============================================================ */
+initScene();
+animate();
+</script>
+</body>
+</html>
