@@ -292,7 +292,6 @@
     font:bold 20px monospace; z-index:10; text-shadow:0 0 6px #000;
     line-height:1.4;
   }
-  #score { color:#0f0; }
   #hp    { color:#ff5555; }
 
   #netBadge {
@@ -535,8 +534,7 @@ import * as THREE from 'three';
 /* ============================================================
    НАСТРОЙКИ СЕТИ — ВСТАВЬ СЮДА СВОЙ СЕРВЕР С RENDER
    ============================================================ */
-// Если ты ещё не создал сервер на Render, замени эту строку на '0.peerjs.com' (временно, пока сервер лежит)
-const PEER_HOST = 'zaharkashuter.onrender.com'; // <--- ЗАМЕНИ НА СВОЙ АДРЕС БЕЗ HTTPS
+const PEER_HOST = 'zaharkashuter.onrender.com'; 
 const PEER_PORT = 443;
 const PEER_PATH = '/';
 const PEER_SECURE = true;
@@ -998,13 +996,8 @@ function tryShoot() {
     const dmg = part === 'head' ? 80 : 25;
     flashHit(first.point, part === 'head');
     
-    // СЕТЕВАЯ ЛОГИКА
     if (net.isOnline) {
-      if (net.isHost) {
-        applyDamageToGuest(dmg, part === 'head');
-      } else {
-        net.conn.send({ t:'hit', dmg, head: part === 'head' });
-      }
+      net.conn.send({ t:'hit', dmg, head: part === 'head' });
     }
   }
 }
@@ -1025,32 +1018,7 @@ function flashHit(pos, head) {
   tracers.push({ line:m, born: performance.now(), isFlash:true });
 }
 
-/* ========== УРОН ========== */
-function applyDamageToGuest(dmg, head) {
-  if (!net.isHost) return;
-  net.guestHp -= dmg;
-  if (net.guestHp < 0) net.guestHp = 0;
-  net.conn.send({ t:'hp', guest: net.guestHp, host: net.hostHp });
-  addKillfeed(`${net.myName} → ${net.otherName}`, head ? '#ff4444' : '#ffaa44');
-  
-  if (net.guestHp <= 0) {
-    net.conn.send({ t:'kill', killer: net.myName, victim: net.otherName });
-    showDeathScreen(net.otherName, net.myName);
-  }
-}
-
-function applyDamageToHost(dmg, head) {
-  net.hostHp -= dmg;
-  if (net.hostHp < 0) net.hostHp = 0;
-  net.conn.send({ t:'hp', guest: net.guestHp, host: net.hostHp });
-  addKillfeed(`${net.otherName} → ${net.myName}`, head ? '#ff4444' : '#ffaa44');
-  
-  if (net.hostHp <= 0) {
-    net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
-    showDeathScreen(net.myName, net.otherName);
-  }
-}
-
+/* ========== УРОН И СМЕРТЬ ========== */
 function showDeathScreen(victim, killer) {
   if (victim !== net.myName) return;
   document.getElementById('deathKiller').textContent = killer;
@@ -1193,18 +1161,15 @@ function handlePeerData(data) {
     if (net.isHost) {
       net.otherName = data.name;
       otherName.textContent = net.otherName;
-      net.conn.send({ t:'welcome', name: net.myName });
-      setNetStatus('ПОДКЛЮЧЕНО!', 'ok');
-      document.getElementById('hostPlayers').innerHTML =
-        `Ты: <b style="color:#ff8844;">${net.myName}</b><br>Гость: <b style="color:#88ddff;">${net.otherName}</b>`;
-      setTimeout(() => { enterOnlineGame(); }, 400);
+      net.conn.send({ t:'start', name: net.myName });
+      setTimeout(() => { enterOnlineGame(); }, 100);
     }
   }
-  else if (data.t === 'welcome') {
+  else if (data.t === 'start') {
     if (!net.isHost) {
       net.otherName = data.name;
       otherName.textContent = net.otherName;
-      setNetStatus('ПОДКЛЮЧЕНО!', 'ok');
+      enterOnlineGame();
     }
   }
   else if (data.t === 'input') {
@@ -1223,7 +1188,20 @@ function handlePeerData(data) {
     }
   }
   else if (data.t === 'hit') {
-    if (net.isHost) applyDamageToHost(data.dmg, data.head);
+    if (net.isHost) {
+      net.hostHp -= data.dmg;
+      if (net.hostHp < 0) net.hostHp = 0;
+      hpEl.textContent = net.hostHp;
+      dmgFlash.style.opacity = '0.8';
+      setTimeout(() => dmgFlash.style.opacity = '0', 100);
+      addKillfeed(`${net.otherName} → ${net.myName}`, data.head ? '#ff4444' : '#ffaa44');
+      
+      net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
+      if (net.hostHp <= 0) {
+        net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
+        showDeathScreen(net.myName, net.otherName);
+      }
+    }
   }
   else if (data.t === 'hp') {
     if (!net.isHost) {
@@ -1279,7 +1257,6 @@ function enterOnlineGame() {
 
 /* ========== СЕТЕВОЙ ТИК ========== */
 let netTickInterval = null;
-let guestInputAccum = { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false };
 
 function startNetTick() {
   if (netTickInterval) clearInterval(netTickInterval);
@@ -1316,7 +1293,6 @@ function startNetTick() {
       net.conn.send({
         t: 'state',
         host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, pitch: player.pitch, alive: player.alive },
-        guest: { x: remotePlayer.group.position.x, y: remotePlayer.group.position.y, z: remotePlayer.group.position.z, yaw: remotePlayer.group.rotation.y, alive: net.guestHp > 0 },
       });
     }, TICK_MS);
   } else {
@@ -1529,4 +1505,4 @@ initScene();
 animate();
 </script>
 </body>
- </html>
+</html>
