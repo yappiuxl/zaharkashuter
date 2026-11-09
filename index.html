@@ -459,7 +459,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 1.0 · P2P<br>
+      ВЕРСИЯ 1.1 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -639,14 +639,14 @@ const PLAYER_RADIUS = 0.4;
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 
-// Бот (AI)
+// Бот (AI) — Усложненные параметры
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3, REPOSITION:4, FLEE:5, PEEK:6 };
-const BOT_SIGHT_DIST = 55, BOT_ATTACK_DIST = 22, BOT_FOV = Math.PI * 0.75;
-const BOT_HEARING_DIST = 60, BOT_SPEED = 4.2, BOT_SPEED_FLEE = 6.0, BOT_SPEED_STRAFE = 5.0;
-const BOT_HP = 300, BOT_HP_REGEN = 8, BOT_REGEN_DELAY = 3000;
-const BOT_FIRE_COOLDOWN = 600, BOT_DAMAGE = 12, BOT_ACCURACY = 0.4;
-const BOT_REACTION_TIME = 250, BOT_SEARCH_TIME = 6000;
-const BOT_STRAFE_INTERVAL = 900, BOT_PEEK_TIME = 700, BOT_DODGE_RANGE = 30;
+const BOT_SIGHT_DIST = 65, BOT_ATTACK_DIST = 25, BOT_FOV = Math.PI * 0.85;
+const BOT_HEARING_DIST = 70, BOT_SPEED = 4.6, BOT_SPEED_FLEE = 6.5, BOT_SPEED_STRAFE = 5.5;
+const BOT_HP = 400, BOT_HP_REGEN = 15, BOT_REGEN_DELAY = 2000;
+const BOT_FIRE_COOLDOWN = 450, BOT_DAMAGE = 14, BOT_ACCURACY = 0.55;
+const BOT_REACTION_TIME = 200, BOT_SEARCH_TIME = 8000;
+const BOT_STRAFE_INTERVAL = 700, BOT_PEEK_TIME = 700, BOT_DODGE_RANGE = 40;
 const BOT_SPAWN = { x: -45, z: -45 };
 
 /* ============================================================
@@ -860,7 +860,6 @@ function createWeaponModel(type) {
     g.add(sight);
   } 
   else if (type === 'shotgun') {
-    // Дробовик: короткий и толстый
     const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.4), gunMat);
     receiver.position.set(0.25, -0.25, -0.4);
     g.add(receiver);
@@ -879,7 +878,6 @@ function createWeaponModel(type) {
     g.add(stock);
   }
   else if (type === 'grenade') {
-    // Граната в руке
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), 
       new THREE.MeshStandardMaterial({ color:0x2a3a1a, roughness:0.6 }));
     body.position.set(0.25, -0.25, -0.4);
@@ -1248,10 +1246,9 @@ function tryShoot() {
   const now = performance.now();
   
   if (player.weapon === 'grenade') {
-    if (now - player.lastGrenadeTime < 1000) return; // кулдаун гранаты
+    if (now - player.lastGrenadeTime < 1000) return;
     player.lastGrenadeTime = now;
     throwGrenade();
-    // После броска возвращаем оружие
     player.weapon = 'rifle';
     grenadeBtn.classList.remove('active');
     updateWeaponVisual();
@@ -1296,7 +1293,8 @@ function tryShoot() {
   if (first.object.userData.part) {
     const isHead = first.object.userData.part === 'head';
     let dmg = 0;
-    if (player.weapon === 'rifle') dmg = isHead ? 80 : 25;
+    // АВТОМАТ ОСЛАБЛЕН, ДРОБОВИК МОЩНЫЙ
+    if (player.weapon === 'rifle') dmg = isHead ? 50 : 15;
     else if (player.weapon === 'shotgun') dmg = isHead ? 100 : 40;
 
     spawnBlood(first.point);
@@ -1333,7 +1331,6 @@ function tryShoot() {
 
 function throwGrenade() {
   player.grenades--;
-  
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir);
   const pos = camera.position.clone().add(dir.clone().multiplyScalar(1));
@@ -1384,12 +1381,12 @@ function updateGrenades(dt, now) {
         scene.remove(g);
         grenades.splice(i, 1);
 
-        const explodeDist = 8; // Увеличенный радиус
+        const explodeDist = 15; // ЕЩЕ БОЛЬШЕ РАДИУС
         // Урон игроку
         if (player.alive) {
           const dist = player.pos.distanceTo(g.position);
           if (dist < explodeDist) {
-            const dmg = Math.round(100 * (1 - dist / explodeDist)); // Урон зависит от расстояния
+            const dmg = Math.round(120 * (1 - dist / explodeDist)); 
             if (dmg > 0) {
               player.hp -= dmg;
               if (player.hp < 0) player.hp = 0;
@@ -1406,7 +1403,7 @@ function updateGrenades(dt, now) {
 
         // Урон боту в одиночке
         if (mode === MODE.PLAY_SOLO && bot.alive && bot.group.position.distanceTo(g.position) < explodeDist) {
-          bot.hp -= 100;
+          bot.hp -= 150;
           if (bot.hp <= 0) {
             bot.alive = false;
             bot.group.rotation.x = -Math.PI/2;
@@ -1418,12 +1415,12 @@ function updateGrenades(dt, now) {
         // Урон онлайну
         if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible && remotePlayer.group.position.distanceTo(g.position) < explodeDist) {
           if (net.isHost) {
-            net.guestHp -= 80;
+            net.guestHp -= 120;
             if (net.guestHp < 0) net.guestHp = 0;
             otherHp.textContent = net.guestHp;
             net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
           } else {
-            net.conn.send({ t:'dmg', dmg: 80, head: false, weapon: 'grenade' });
+            net.conn.send({ t:'dmg', dmg: 120, head: false, weapon: 'grenade' });
           }
         }
       }
@@ -1515,6 +1512,14 @@ function updateBot(dt, now) {
   const playerEyeY = player.pos.y + PLAYER_HEIGHT;
   const botEyeY = 1.6;
 
+  // Реакция на выстрелы игрока (слышит)
+  if (input.fire && now - bot.heardTime > 500 && dist < BOT_HEARING_DIST) {
+    bot.heardTime = now;
+    bot.lastSeenX = player.pos.x;
+    bot.lastSeenZ = player.pos.z;
+    if (bot.state === BOT_STATE.PATROL) bot.state = BOT_STATE.SEARCH;
+  }
+
   let canSeePlayer = false;
   if (dist < BOT_SIGHT_DIST) {
     const angleToPlayer = Math.atan2(dx, dz);
@@ -1530,6 +1535,7 @@ function updateBot(dt, now) {
     bot.lastSeenTime = now;
   }
   
+  // Регенерация
   if (now - bot.lastDamaged > BOT_REGEN_DELAY) {
     bot.hp = Math.min(BOT_HP, bot.hp + BOT_HP_REGEN * dt);
   }
@@ -1546,6 +1552,23 @@ function updateBot(dt, now) {
 
   if (bot.state === BOT_STATE.ATTACK) {
     turnTowards(bot, Math.atan2(dx, dz), dt, 14);
+    
+    // Постоянный стрейф
+    if (now > bot.strafeUntil) {
+      bot.strafeDir = Math.random() < 0.5 ? 1 : -1;
+      bot.strafeUntil = now + BOT_STRAFE_INTERVAL + Math.random() * 400;
+    }
+    if (Math.random() < 0.8) {
+      const len = dist || 1;
+      const perpX = -dz / len * bot.strafeDir;
+      const perpZ = dx / len * bot.strafeDir;
+      const step = BOT_SPEED_STRAFE * dt;
+      const nx = bp.x + perpX * step;
+      const nz = bp.z + perpZ * step;
+      if (canExistAt(nx, bp.z, 0, 0.5)) bp.x = nx;
+      if (canExistAt(bp.x, nz, 0, 0.5)) bp.z = nz;
+    }
+
     if (now - bot.spottedAt < BOT_REACTION_TIME) return;
     if (now - bot.lastShot < BOT_FIRE_COOLDOWN) return;
     if (!hasLineOfSight(bp.x, bp.z, player.pos.x, player.pos.z, 1.6, playerEyeY)) return;
@@ -2268,4 +2291,4 @@ buildNavGrid();
 animate();
 </script>
 </body>
-</html>
+ </html>
