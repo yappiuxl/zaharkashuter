@@ -1160,14 +1160,19 @@ function handlePeerData(data) {
   if (data.t === 'hello') {
     if (net.isHost) {
       net.otherName = data.name;
-      net.conn.send({ t:'start', name: net.myName });
-      enterOnlineGame();
+      
+      // Хост решает, где спавнить гостя (напротив хоста)
+      const guestSpawnX = 0;
+      const guestSpawnZ = -25;
+      
+      net.conn.send({ t:'start', name: net.myName, spawnX: guestSpawnX, spawnZ: guestSpawnZ });
+      enterOnlineGame(0, 25, guestSpawnX, guestSpawnZ);
     }
   }
   else if (data.t === 'start') {
     if (!net.isHost) {
       net.otherName = data.name;
-      enterOnlineGame();
+      enterOnlineGame(data.spawnX, data.spawnZ, 0, 25); // гость ставит себя на свои координаты
     }
   }
   else if (data.t === 'input') {
@@ -1221,22 +1226,24 @@ function handlePeerData(data) {
   }
 }
 
-function enterOnlineGame() {
+function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
   mode = MODE.PLAY;
   net.isOnline = true;
 
-  player.pos.set(0, 0, 25);
+  // Себя ставим на свою позицию
+  player.pos.set(mySpawnX, 0, mySpawnZ);
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
   player.hp = 100; player.alive = true;
   player.onGround = true;
 
+  // Противника на его позицию
+  remotePlayer.group.position.set(otherSpawnX, 0, otherSpawnZ);
+  remotePlayer.group.rotation.y = 0;
+  remotePlayer.group.visible = true;
+  updateRemoteTag(net.otherName);
+
   net.hostHp = 100;
   net.guestHp = 100;
-
-  remotePlayer.group.visible = true;
-  remotePlayer.group.position.set(0, 0, -25);
-  remotePlayer.group.rotation.y = 0;
-  updateRemoteTag(net.otherName);
 
   menuEl.classList.add('hidden');
   document.getElementById('netModal').classList.remove('show');
