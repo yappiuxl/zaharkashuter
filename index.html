@@ -310,6 +310,9 @@
     box-shadow:0 0 20px rgba(80,200,80,0.3);
   }
   #grenadeBtn:active { background:rgba(120,255,120,0.6); transform:scale(0.95); }
+  #grenadeBtn.active {
+    background:rgba(255,200,50,0.8); border-color: #fff;
+  }
 
   #hud {
     position:fixed; top:15px; left:15px; color:#fff;
@@ -456,7 +459,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 0.9 · P2P<br>
+      ВЕРСИЯ 1.0 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -599,7 +602,8 @@ let colliders = [], tracers = [], grenades = [], bloodParticles = [];
 let raycaster;
 let player, remotePlayer, bot;
 let platforms = [];
-let weaponModel;
+let weaponModels = { rifle: null, shotgun: null, grenade: null };
+let currentGrenadeMesh = null;
 
 const scoreEl = document.getElementById('score');
 const hpEl = document.getElementById('hp');
@@ -609,6 +613,7 @@ const otherName = document.getElementById('otherName');
 const otherHp = document.getElementById('otherHp');
 const killfeed = document.getElementById('killfeed');
 const scoreboard = document.getElementById('scoreboard');
+const grenadeBtn = document.getElementById('grenadeBtn');
 
 const menuCam = {
   angle: 0, speed: 0.12, radius: 14, height: 3.2,
@@ -624,6 +629,7 @@ const net = {
   hostScore: 0, guestScore: 0,
 };
 
+// Константы
 const FLOOR = 60;
 const PLAYER_HEIGHT = 1.6;
 const GRAVITY = -22;
@@ -633,6 +639,7 @@ const PLAYER_RADIUS = 0.4;
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 
+// Бот (AI)
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3, REPOSITION:4, FLEE:5, PEEK:6 };
 const BOT_SIGHT_DIST = 55, BOT_ATTACK_DIST = 22, BOT_FOV = Math.PI * 0.75;
 const BOT_HEARING_DIST = 60, BOT_SPEED = 4.2, BOT_SPEED_FLEE = 6.0, BOT_SPEED_STRAFE = 5.0;
@@ -789,7 +796,6 @@ function initScene() {
     addBox(x, y, z, w, h, d, c, true);
   });
 
-  // игрок
   player = {
     pos: new THREE.Vector3(0, 0, 25),
     vy: 0, yaw: Math.PI, pitch: 0,
@@ -798,19 +804,26 @@ function initScene() {
     weapon: 'rifle', grenades: 3, lastGrenadeTime: 0
   };
 
-  // удалённый игрок (для онлайна)
   remotePlayer = createRemotePlayerModel();
   remotePlayer.group.visible = false;
   scene.add(remotePlayer.group);
 
-  // Бот (для одиночки)
   bot = createBot(BOT_SPAWN.x, BOT_SPAWN.z);
   bot.group.visible = false;
   scene.add(bot.group);
 
-  // оружие в кадре
-  weaponModel = createWeaponModel();
-  camera.add(weaponModel);
+  // Оружие в кадре
+  weaponModels.rifle = createWeaponModel('rifle');
+  weaponModels.shotgun = createWeaponModel('shotgun');
+  weaponModels.grenade = createWeaponModel('grenade');
+  
+  weaponModels.rifle.visible = true;
+  weaponModels.shotgun.visible = false;
+  weaponModels.grenade.visible = false;
+  
+  camera.add(weaponModels.rifle);
+  camera.add(weaponModels.shotgun);
+  camera.add(weaponModels.grenade);
   scene.add(camera);
 
   addEventListener('resize', () => {
@@ -821,33 +834,72 @@ function initScene() {
   });
 }
 
-/* ========== ОРУЖИЕ ========== */
-function createWeaponModel() {
+/* ========== МОДЕЛИ ОРУЖИЯ ========== */
+function createWeaponModel(type) {
   const g = new THREE.Group();
   const gunMat = new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.5, metalness:0.6 });
   const metalMat = new THREE.MeshStandardMaterial({ color:0x2a2a2a, roughness:0.35, metalness:0.8 });
   
-  const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.11, 0.55), gunMat);
-  receiver.position.set(0.25, -0.25, -0.4);
-  g.add(receiver);
-  
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.4, 10), metalMat);
-  barrel.rotation.x = Math.PI / 2;
-  barrel.position.set(0.25, -0.24, -0.8);
-  g.add(barrel);
+  if (type === 'rifle') {
+    const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.11, 0.55), gunMat);
+    receiver.position.set(0.25, -0.25, -0.4);
+    g.add(receiver);
+    
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.4, 10), metalMat);
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(0.25, -0.24, -0.8);
+    g.add(barrel);
 
-  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.26, 0.12), gunMat);
-  mag.position.set(0.25, -0.42, -0.5);
-  mag.rotation.x = -0.15;
-  g.add(mag);
+    const mag = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.26, 0.12), gunMat);
+    mag.position.set(0.25, -0.42, -0.5);
+    mag.rotation.x = -0.15;
+    g.add(mag);
 
-  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.14), metalMat);
-  sight.position.set(0.25, -0.15, -0.3);
-  g.add(sight);
+    const sight = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.14), metalMat);
+    sight.position.set(0.25, -0.15, -0.3);
+    g.add(sight);
+  } 
+  else if (type === 'shotgun') {
+    // Дробовик: короткий и толстый
+    const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.4), gunMat);
+    receiver.position.set(0.25, -0.25, -0.4);
+    g.add(receiver);
+    
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 10), metalMat);
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(0.25, -0.23, -0.75);
+    g.add(barrel);
+
+    const pump = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.18), gunMat);
+    pump.position.set(0.25, -0.3, -0.6);
+    g.add(pump);
+
+    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.2), gunMat);
+    stock.position.set(0.25, -0.25, -0.15);
+    g.add(stock);
+  }
+  else if (type === 'grenade') {
+    // Граната в руке
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), 
+      new THREE.MeshStandardMaterial({ color:0x2a3a1a, roughness:0.6 }));
+    body.position.set(0.25, -0.25, -0.4);
+    body.scale.set(1, 1.2, 1);
+    g.add(body);
+    
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.06, 8), metalMat);
+    top.position.set(0.25, -0.11, -0.4);
+    g.add(top);
+    
+    const pin = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.01, 6, 12), metalMat);
+    pin.position.set(0.25, -0.13, -0.4);
+    pin.rotation.x = Math.PI / 2;
+    g.add(pin);
+  }
 
   return g;
 }
 
+/* ========== УДАЛЁННЫЙ ИГРОК ========== */
 function createRemotePlayerModel() {
   const g = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({ color:0x4488dd, roughness:0.6, emissive:0x112244 });
@@ -901,7 +953,7 @@ function updateRemoteTag(name) {
   remotePlayer.tagTex.needsUpdate = true;
 }
 
-/* ========== БОТ (возвращаем) ========== */
+/* ========== БОТ ========== */
 function createBot(x, z) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
@@ -1145,15 +1197,30 @@ const swapBtn = document.getElementById('swapBtn');
 swapBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
   if (mode !== MODE.MENU && player.alive) {
-    player.weapon = player.weapon === 'rifle' ? 'shotgun' : 'rifle';
+    if (player.weapon === 'grenade') {
+      player.weapon = 'rifle';
+      grenadeBtn.classList.remove('active');
+    } else {
+      player.weapon = player.weapon === 'rifle' ? 'shotgun' : 'rifle';
+    }
     sounds.shot(0, 0.1);
+    updateWeaponVisual();
   }
 }, { passive:false });
 
-const grenadeBtn = document.getElementById('grenadeBtn');
 grenadeBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
-  if (mode !== MODE.MENU && player.alive) throwGrenade();
+  if (mode !== MODE.MENU && player.alive) {
+    if (player.weapon === 'grenade') {
+      player.weapon = 'rifle';
+      grenadeBtn.classList.remove('active');
+    } else {
+      player.weapon = 'grenade';
+      grenadeBtn.classList.add('active');
+    }
+    sounds.shot(0, 0.1);
+    updateWeaponVisual();
+  }
 }, { passive:false });
 
 const fireBtn = document.getElementById('fire');
@@ -1163,19 +1230,42 @@ fireBtn.addEventListener('touchcancel',e => { e.preventDefault(); e.stopPropagat
 fireBtn.addEventListener('mousedown',  () => input.fire = true);
 fireBtn.addEventListener('mouseup',    () => input.fire = false);
 
+function updateWeaponVisual() {
+  weaponModels.rifle.visible = false;
+  weaponModels.shotgun.visible = false;
+  weaponModels.grenade.visible = false;
+  
+  if (player.weapon === 'rifle') weaponModels.rifle.visible = true;
+  else if (player.weapon === 'shotgun') weaponModels.shotgun.visible = true;
+  else if (player.weapon === 'grenade') weaponModels.grenade.visible = true;
+}
+
 /* ========== СТРЕЛЬБА И УРОН ========== */
 let lastShot = 0;
 
 function tryShoot() {
   if (!player.alive) return;
   const now = performance.now();
+  
+  if (player.weapon === 'grenade') {
+    if (now - player.lastGrenadeTime < 1000) return; // кулдаун гранаты
+    player.lastGrenadeTime = now;
+    throwGrenade();
+    // После броска возвращаем оружие
+    player.weapon = 'rifle';
+    grenadeBtn.classList.remove('active');
+    updateWeaponVisual();
+    return;
+  }
+
   const cooldown = player.weapon === 'rifle' ? 110 : 800;
   if (now - lastShot < cooldown) return;
   lastShot = now;
 
-  if (weaponModel) {
-    weaponModel.position.z = 0.05;
-    setTimeout(() => { if (weaponModel) weaponModel.position.z = 0; }, 50);
+  const model = player.weapon === 'rifle' ? weaponModels.rifle : weaponModels.shotgun;
+  if (model) {
+    model.position.z = 0.05;
+    setTimeout(() => { if (model) model.position.z = 0; }, 50);
   }
 
   if (player.weapon === 'rifle') sounds.shot(0, 0.5);
@@ -1187,15 +1277,12 @@ function tryShoot() {
   camera.getWorldPosition(origin);
 
   const targets = [];
-  
-  // Если мы в онлайне - проверяем игрока, если в одиночке - бота
   if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible) {
     targets.push(remotePlayer.hitHead, remotePlayer.hitBody);
   }
   if (mode === MODE.PLAY_SOLO && bot.alive) {
     targets.push(bot.hitHead, bot.hitBody);
   }
-  
   for (let i = 0; i < colliders.length; i++) targets.push(colliders[i].mesh);
 
   raycaster.set(origin, shootDir);
@@ -1217,7 +1304,6 @@ function tryShoot() {
     else sounds.hit(0, 0.5);
 
     if (mode === MODE.PLAY_SOLO && first.object.userData.isBot) {
-      // Урон боту
       bot.hp -= dmg;
       bot.lastDamaged = performance.now();
       if (bot.hp <= 0) {
@@ -1228,7 +1314,6 @@ function tryShoot() {
       }
     } 
     else if (mode === MODE.PLAY_ONLINE) {
-      // Сетевой урон
       net.conn.send({ t:'dmg', dmg, head: isHead, weapon: player.weapon });
       if (net.isHost) {
         net.guestHp -= dmg;
@@ -1247,12 +1332,8 @@ function tryShoot() {
 }
 
 function throwGrenade() {
-  const now = performance.now();
-  if (now - player.lastGrenadeTime < 2000) return;
-  if (player.grenades <= 0) return;
   player.grenades--;
-  player.lastGrenadeTime = now;
-
+  
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir);
   const pos = camera.position.clone().add(dir.clone().multiplyScalar(1));
@@ -1264,7 +1345,7 @@ function throwGrenade() {
   grenade.position.copy(pos);
   grenade.userData = {
     vel: dir.clone().multiplyScalar(15).add(new THREE.Vector3(0, 5, 0)),
-    born: now,
+    born: performance.now(),
     exploded: false
   };
   scene.add(grenade);
@@ -1303,12 +1384,12 @@ function updateGrenades(dt, now) {
         scene.remove(g);
         grenades.splice(i, 1);
 
-        const explodeDist = 5;
+        const explodeDist = 8; // Увеличенный радиус
         // Урон игроку
         if (player.alive) {
           const dist = player.pos.distanceTo(g.position);
           if (dist < explodeDist) {
-            const dmg = Math.round(80 * (1 - dist / explodeDist));
+            const dmg = Math.round(100 * (1 - dist / explodeDist)); // Урон зависит от расстояния
             if (dmg > 0) {
               player.hp -= dmg;
               if (player.hp < 0) player.hp = 0;
@@ -1550,7 +1631,7 @@ function hasLineOfSight(fromX, fromZ, toX, toZ, fromY = 1.6, toY = 1.6) {
   return true;
 }
 
-/* ========== NAV MESH (Для бота) ========== */
+/* ========== NAV MESH ========== */
 let NAV_CELL, NAV_SIZE, NAV_OFFSET, NAV_RADIUS;
 let navGrid;
 function buildNavGrid() {
@@ -1844,15 +1925,15 @@ function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
   player.hp = 100; player.alive = true; player.onGround = true;
   player.weapon = 'rifle'; player.grenades = 3;
-
+  updateWeaponVisual();
+  
   remotePlayer.group.position.set(otherSpawnX, 0, otherSpawnZ);
   remotePlayer.group.rotation.y = 0;
   remotePlayer.group.visible = true;
   updateRemoteTag(net.otherName);
 
-  bot.group.visible = false; // Бот отключен в онлайне
-  weaponModel.visible = true;
-
+  bot.group.visible = false;
+  
   net.hostHp = 100;
   net.guestHp = 100;
 
@@ -1873,7 +1954,7 @@ function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
 }
 
 /* ============================================================
-   УПРАВЛЕНИЕ СОСТОЯНИЕМ ИГРЫ
+   УПРАВЛЕНИЕ СОСТОЯНИЕМ
    ============================================================ */
 const menuEl = document.getElementById('menu');
 const tabs = document.querySelectorAll('.tab');
@@ -1961,7 +2042,7 @@ function startSoloGame() {
   document.body.classList.remove('ingame-online');
   
   remotePlayer.group.visible = false;
-  bot.group.visible = true; // Включаем бота
+  bot.group.visible = true;
   bot.alive = true;
   bot.hp = BOT_HP;
   bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
@@ -1978,10 +2059,11 @@ function startSoloGame() {
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
   player.hp = 100; player.alive = true; player.onGround = true;
   player.weapon = 'rifle'; player.grenades = 3;
+  updateWeaponVisual();
+  grenadeBtn.classList.remove('active');
   
   hpEl.textContent = 100;
   input.fire = false; input.moveX = 0; input.moveY = 0;
-  weaponModel.visible = true;
   clock.getDelta();
 }
 
@@ -2001,6 +2083,7 @@ function exitToMenu() {
   net.lastSnapshot = null;
   remotePlayer.group.visible = false;
   bot.group.visible = false;
+  grenadeBtn.classList.remove('active');
 
   document.getElementById('voiceToggleBtn').style.display = 'block';
   document.getElementById('voiceToggleBtnGuest').style.display = 'block';
@@ -2102,9 +2185,12 @@ function animate() {
     const camY = player.pos.y + PLAYER_HEIGHT;
     camera.position.set(player.pos.x, camY, player.pos.z);
     
-    if (weaponModel) {
-      weaponModel.position.x += Math.sin(now * 0.005) * 0.001;
-      weaponModel.position.y += Math.cos(now * 0.004) * 0.001;
+    if (player.weapon !== 'grenade') {
+      const model = player.weapon === 'rifle' ? weaponModels.rifle : weaponModels.shotgun;
+      if (model) {
+        model.position.x += Math.sin(now * 0.005) * 0.001;
+        model.position.y += Math.cos(now * 0.004) * 0.001;
+      }
     }
 
     const cp = Math.cos(player.pitch);
@@ -2145,8 +2231,16 @@ addEventListener('keydown', e => {
   if (e.key === 'd' || e.key === 'D') input.moveX = 1;
   if (e.key === ' ') input.fire = true;
   if (e.key === 'Shift') tryJump(player);
-  if (e.key === 'q' || e.key === 'Q') player.weapon = player.weapon === 'rifle' ? 'shotgun' : 'rifle';
-  if (e.key === 'g' || e.key === 'G') throwGrenade();
+  if (e.key === 'q' || e.key === 'Q') {
+    if (player.weapon === 'grenade') { player.weapon = 'rifle'; grenadeBtn.classList.remove('active'); }
+    else { player.weapon = player.weapon === 'rifle' ? 'shotgun' : 'rifle'; }
+    updateWeaponVisual();
+  }
+  if (e.key === 'g' || e.key === 'G') {
+    if (player.weapon === 'grenade') { player.weapon = 'rifle'; grenadeBtn.classList.remove('active'); }
+    else { player.weapon = 'grenade'; grenadeBtn.classList.add('active'); }
+    updateWeaponVisual();
+  }
 });
 addEventListener('keyup', e => {
   if ((e.key === 'w' || e.key === 'W') && input.moveY === -1) input.moveY = 0;
@@ -2174,4 +2268,4 @@ buildNavGrid();
 animate();
 </script>
 </body>
- </html>
+</html>
