@@ -270,10 +270,7 @@
   .netView.show { display: block; }
 
   /* ============ ИГРОВОЙ UI ============ */
-  :root {
-    --btn-scale: 1;
-    --btn-opacity: 1;
-  }
+  :root { --btn-scale: 1; --btn-opacity: 1; }
 
   #stickL {
     position:fixed; width:140px; height:140px;
@@ -291,7 +288,7 @@
   }
   #rightHalf { position:fixed; top:0; right:0; bottom:0; width:50%; z-index:5; touch-action:none; }
   #leftHalf  { position:fixed; top:0; left:0;  bottom:0; width:50%; z-index:5; touch-action:none; }
-  #leftHalf, #rightHalf, #stickL, #fire, #jump, #hud, #crosshair, #netBadge, #otherHud, #exitBtn, #killfeed, #swapBtn, #grenadeBtn, #scoreboard, #ammoHud, #reloadBtn, #settingsBtn { display:none; }
+  #leftHalf, #rightHalf, #stickL, #fire, #jump, #hud, #crosshair, #netBadge, #otherHud, #exitBtn, #killfeed, #swapBtn, #grenadeBtn, #scoreboard, #ammoHud, #reloadBtn { display:none; }
   
   body.ingame #leftHalf, body.ingame #rightHalf { display:block; }
   body.ingame #stickL, body.ingame #fire, body.ingame #jump, body.ingame #swapBtn, body.ingame #grenadeBtn, body.ingame #reloadBtn { display:flex; }
@@ -307,8 +304,7 @@
     color:#fff; font:bold 20px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(255,60,60,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right;
-    opacity: var(--btn-opacity);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
   }
   #fire:active { background:rgba(255,120,120,0.7); transform:scale(calc(var(--btn-scale) * 0.95)); }
   
@@ -319,8 +315,7 @@
     color:#fff; font:bold 18px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(80,180,255,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right;
-    opacity: var(--btn-opacity);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
   }
   #jump:active { background:rgba(120,200,255,0.65); transform:scale(calc(var(--btn-scale) * 0.95)); }
 
@@ -331,8 +326,7 @@
     color:#fff; font:bold 14px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(255,255,80,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right;
-    opacity: var(--btn-opacity);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
   }
   #swapBtn:active { background:rgba(255,255,120,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
 
@@ -343,8 +337,7 @@
     color:#fff; font:bold 14px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(80,200,80,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right;
-    opacity: var(--btn-opacity);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
   }
   #grenadeBtn:active { background:rgba(120,255,120,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
   #grenadeBtn.active { background:rgba(255,200,50,0.8); border-color: #fff; }
@@ -356,8 +349,7 @@
     color:#fff; font:bold 14px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(180,180,180,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right;
-    opacity: var(--btn-opacity);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
   }
   #reloadBtn:active { background:rgba(220,220,220,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
 
@@ -517,7 +509,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 1.6 · P2P<br>
+      ВЕРСИЯ 1.7 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -572,14 +564,12 @@
 
     <div id="netStatus" class="netStatus">ВЫБЕРИ РЕЖИМ</div>
 
-    <!-- Стартовый экран -->
     <div class="netView show" id="netStartView">
-      <p>Прямое P2P-соединение через WebRTC. Один игрок создаёт комнату — другой подключается по коду. Публичный PeerJS Cloud используется только для рукопожатия, дальше трафик идёт напрямую между устройствами. Игра до 10 киллов!</p>
+      <p>Прямое P2P-соединение через WebRTC. Один игрок создаёт комнату — другой подключается по коду. Игра до 10 киллов!</p>
       <button class="netBtn primary" id="hostBtn">СОЗДАТЬ КОМНАТУ</button>
       <button class="netBtn full" id="joinBtn">ПОДКЛЮЧИТЬСЯ ПО КОДУ</button>
     </div>
 
-    <!-- Экран хоста — лобби -->
     <div class="netView" id="hostView">
       <h3>КОД КОМНАТЫ</h3>
       <div class="netCodeBox">
@@ -597,7 +587,6 @@
       <button class="netBtn back full" id="hostCancelBtn" style="margin-top:14px;">ОТМЕНА</button>
     </div>
 
-    <!-- Экран гостя — ввод кода -->
     <div class="netView" id="joinView">
       <h3>ТВОЙ НИК</h3>
       <input class="netInput" id="joinName" placeholder="Введи ник" maxlength="12" />
@@ -612,7 +601,6 @@
       <button class="netBtn back full" id="joinCancelBtn" style="margin-top:14px;">ОТМЕНА</button>
     </div>
 
-    <!-- Создание комнаты — ник -->
     <div class="netView" id="createNickView">
       <h3>ТВОЙ НИК</h3>
       <input class="netInput" id="hostNameInput" placeholder="Введи ник" maxlength="12" />
@@ -2445,4 +2433,4 @@ buildNavGrid();
 animate();
 </script>
 </body>
-</html>
+ </html>
