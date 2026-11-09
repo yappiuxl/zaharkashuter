@@ -459,7 +459,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 1.3 · P2P<br>
+      ВЕРСИЯ 1.5 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -639,7 +639,7 @@ const PLAYER_RADIUS = 0.4;
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 
-// Бот (AI)
+// Бот (AI) — Усложненные параметры
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3, REPOSITION:4, FLEE:5, PEEK:6 };
 const BOT_SIGHT_DIST = 65, BOT_ATTACK_DIST = 25, BOT_FOV = Math.PI * 0.85;
 const BOT_HEARING_DIST = 70, BOT_SPEED = 4.6, BOT_SPEED_FLEE = 6.5, BOT_SPEED_STRAFE = 5.5;
@@ -1025,13 +1025,13 @@ function canExistAt(nx, nz, y, radius) {
   return true;
 }
 
-// Проверка гранаты в 3D (сфера радиусом 0.15)
-function grenadeCollides(x, y, z) {
-  _min.set(x - 0.15, y - 0.15, z - 0.15);
-  _max.set(x + 0.15, y + 0.15, z + 0.15);
-  _testBox.min.copy(_min); _testBox.max.copy(_max);
+// Точная проверка столкновения гранаты с сеткой коллизий (включая стены)
+function checkGrenadeCollision(pos) {
+  const testBox = new THREE.Box3();
+  testBox.min.set(pos.x - 0.15, pos.y - 0.15, pos.z - 0.15);
+  testBox.max.set(pos.x + 0.15, pos.y + 0.15, pos.z + 0.15);
   for (let i = 0; i < colliders.length; i++) {
-    if (_testBox.intersectsBox(colliders[i].box)) return true;
+    if (testBox.intersectsBox(colliders[i].box)) return true;
   }
   return false;
 }
@@ -1304,8 +1304,8 @@ function tryShoot() {
   if (first.object.userData.part) {
     const isHead = first.object.userData.part === 'head';
     let dmg = 0;
-    // АВТОМАТ ОСЛАБЛЕН В 4 РАЗА
-    if (player.weapon === 'rifle') dmg = isHead ? 20 : 12;
+    // ВОЗВРАЩАЕМ УРОН: 100 В ГОЛОВУ, 20 В ТЕЛО
+    if (player.weapon === 'rifle') dmg = isHead ? 100 : 20;
     else if (player.weapon === 'shotgun') dmg = isHead ? 100 : 40;
 
     spawnBlood(first.point);
@@ -1368,24 +1368,24 @@ function updateGrenades(dt, now) {
     if (!ud.exploded) {
       ud.vel.y -= 20 * dt;
       
-      // Проверка столкновения по осям для гранаты (в 3D)
+      // Проверка столкновения с коллайдерами по осям для гранаты (через Box3)
       const nextX = g.position.x + ud.vel.x * dt;
-      if (grenadeCollides(nextX, g.position.y, g.position.z)) {
+      if (checkGrenadeCollision(new THREE.Vector3(nextX, g.position.y, g.position.z))) {
         ud.vel.x *= -0.5; // Отскок по X
       } else {
         g.position.x = nextX;
       }
 
       const nextZ = g.position.z + ud.vel.z * dt;
-      if (grenadeCollides(g.position.x, g.position.y, nextZ)) {
+      if (checkGrenadeCollision(new THREE.Vector3(g.position.x, g.position.y, nextZ))) {
         ud.vel.z *= -0.5; // Отскок по Z
       } else {
         g.position.z = nextZ;
       }
 
       const nextY = g.position.y + ud.vel.y * dt;
-      if (grenadeCollides(g.position.x, nextY, g.position.z)) {
-        ud.vel.y *= -0.5; // Отскок по Y (потолок или пол)
+      if (checkGrenadeCollision(new THREE.Vector3(g.position.x, nextY, g.position.z))) {
+        ud.vel.y *= -0.5; // Отскок по Y
       } else {
         g.position.y = nextY;
       }
