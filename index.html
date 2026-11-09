@@ -165,8 +165,7 @@
     text-shadow: 0 0 5px #000;
   }
 
-  /* Игровые кнопки внутри редактора */
-  #layoutEditor .editor-btn {
+  .editor-btn {
     position: absolute; pointer-events: auto; touch-action: none;
     display: flex; align-items: center; justify-content: center;
     font-weight: bold; color: #fff; border-radius: 50%;
@@ -305,7 +304,7 @@
   .netView.show { display: block; }
 
   /* ============ ИГРОВОЙ UI ============ */
-  :root { --btn-scale: 1; --btn-opacity: 1; }
+  :root { --btn-opacity: 1; }
 
   #stickL {
     position:fixed; width:140px; height:140px;
@@ -332,7 +331,6 @@
   body.ingame-online #scoreboard { display:block; }
   body.ingame-online #otherHud { display:block; }
 
-  /* Базовые стили для кнопок, они будут двигаться через JS */
   .game-btn {
     position: fixed;
     display: flex; align-items: center; justify-content: center;
@@ -340,9 +338,9 @@
     border-radius: 50%;
     opacity: var(--btn-opacity);
     z-index: 11;
-    transform: translate(-50%, -50%) scale(var(--btn-scale));
+    transform: translate(-50%, -50%);
   }
-  .game-btn:active { transform: translate(-50%, -50%) scale(calc(var(--btn-scale) * 0.95)); }
+  .game-btn:active { transform: translate(-50%, -50%) scale(0.95); }
 
   #fire { background:rgba(255,60,60,0.35); border:3px solid rgba(255,100,100,0.85); box-shadow:0 0 20px rgba(255,60,60,0.3); }
   #jump { background:rgba(80,180,255,0.3); border:3px solid rgba(120,200,255,0.85); box-shadow:0 0 20px rgba(80,180,255,0.3); }
@@ -732,7 +730,6 @@ document.getElementById('layoutEditorBtn').addEventListener('click', () => {
   isEditingLayout = true;
   layoutEditor.classList.add('show');
   
-  // Очищаем и создаем копии кнопок
   layoutContainer.innerHTML = '';
   const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'grenadeBtn'];
   btns.forEach(id => {
@@ -742,7 +739,6 @@ document.getElementById('layoutEditorBtn').addEventListener('click', () => {
     el.id = 'edit_' + id;
     el.textContent = id === 'swapBtn' ? 'SWAP' : id === 'reloadBtn' ? 'RELOAD' : id === 'grenadeBtn' ? 'GRENADE' : id.toUpperCase();
     
-    // Цвета как в игре
     if (id === 'fire') { el.style.background = 'rgba(255,60,60,0.35)'; el.style.border = '3px solid rgba(255,100,100,0.85)'; }
     if (id === 'jump') { el.style.background = 'rgba(80,180,255,0.3)'; el.style.border = '3px solid rgba(120,200,255,0.85)'; }
     if (id === 'swapBtn') { el.style.background = 'rgba(200,200,50,0.3)'; el.style.border = '3px solid rgba(255,255,80,0.85)'; }
@@ -753,12 +749,6 @@ document.getElementById('layoutEditorBtn').addEventListener('click', () => {
     el.style.top = conf.y + 'px';
     el.style.width = conf.size + 'px';
     el.style.height = conf.size + 'px';
-    
-    // Стили для эдитора
-    el.style.position = 'absolute';
-    el.style.transform = 'translate(-50%, -50%)';
-    el.style.pointerEvents = 'auto';
-    el.style.touchAction = 'none';
     el.style.fontSize = (conf.size / 5) + 'px';
     
     el.addEventListener('pointerdown', handlePointerDown);
@@ -777,6 +767,11 @@ document.getElementById('layoutSaveBtn').addEventListener('click', () => {
   applyLayoutToGame();
 });
 
+const pointerPos = {};
+document.addEventListener('pointerdown', e => { pointerPos[e.pointerId] = {x: e.clientX, y: e.clientY}; });
+document.addEventListener('pointermove', e => { pointerPos[e.pointerId] = {x: e.clientX, y: e.clientY}; });
+document.addEventListener('pointerup', e => { delete pointerPos[e.pointerId]; });
+
 function handlePointerDown(e) {
   const el = e.currentTarget;
   const id = el.id.replace('edit_', '');
@@ -785,7 +780,6 @@ function handlePointerDown(e) {
   dragState.pointers.add(e.pointerId);
   
   if (dragState.pointers.size === 1) {
-    // Начало перетаскивания
     dragState.el = el;
     dragState.id = id;
     dragState.startX = e.clientX;
@@ -793,25 +787,12 @@ function handlePointerDown(e) {
     dragState.startLeft = userSettings.layout[id].x;
     dragState.startTop = userSettings.layout[id].y;
   } else if (dragState.pointers.size === 2) {
-    // Начало ресайза (пинч)
     dragState.el = el;
     dragState.id = id;
-    const pts = Array.from(dragState.pointers);
-    const dist = Math.hypot(pts[0] - pts[1], pts[0] - pts[1]); // Заглушка, настоящий расчет ниже
-    // Правильный расчет расстояния:
-    const p1 = e.getPointerCapture ? e : null; 
-    // Получаем координаты второго пальца не так просто, нужна карта координат.
-    // Будем считать расстояние при движении.
     dragState.startDist = 0; 
     dragState.startSize = userSettings.layout[id].size;
   }
 }
-
-// Для отслеживания мультитача нужно хранить координаты пальцев
-const pointerPos = {};
-document.addEventListener('pointerdown', e => { pointerPos[e.pointerId] = {x: e.clientX, y: e.clientY}; });
-document.addEventListener('pointermove', e => { pointerPos[e.pointerId] = {x: e.clientX, y: e.clientY}; });
-document.addEventListener('pointerup', e => { delete pointerPos[e.pointerId]; });
 
 function handlePointerMove(e) {
   if (!isEditingLayout) return;
@@ -825,7 +806,6 @@ function handlePointerMove(e) {
     let newX = dragState.startLeft + dx;
     let newY = dragState.startTop + dy;
     
-    // Ограничиваем краями экрана
     const halfSize = userSettings.layout[id].size / 2;
     newX = Math.max(halfSize, Math.min(window.innerWidth - halfSize, newX));
     newY = Math.max(halfSize, Math.min(window.innerHeight - halfSize, newY));
@@ -848,7 +828,7 @@ function handlePointerMove(e) {
       } else {
         const scale = dist / dragState.startDist;
         let newSize = dragState.startSize * scale;
-        newSize = Math.max(60, Math.min(160, newSize)); // Ограничиваем 60-160px
+        newSize = Math.max(60, Math.min(160, newSize));
         
         userSettings.layout[id].size = newSize;
         el.style.width = newSize + 'px';
@@ -865,13 +845,12 @@ function handlePointerUp(e) {
     dragState.el = null;
     dragState.id = null;
   } else if (dragState.pointers.size === 1) {
-    // Если остался 1 палец, сбрасываем пинч и переходим к перетаскиванию
     dragState.startDist = 0;
   }
 }
 
 /* ============================================================
-   ИНИЦИАЛИЗАЦИЯ ИГРЫ
+   РЕЖИМЫ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
    ============================================================ */
 const MODE = { MENU: 0, PLAY_SOLO: 1, PLAY_ONLINE: 2 };
 let mode = MODE.MENU;
@@ -909,6 +888,7 @@ const net = {
   maxKills: 10,
 };
 
+// Константы
 const FLOOR = 60;
 const PLAYER_HEIGHT = 1.6;
 const GRAVITY = -22;
@@ -1121,7 +1101,6 @@ function initScene() {
   });
 }
 
-/* ========== МОДЕЛИ ОРУЖИЯ ========== */
 function createWeaponModel(type) {
   const g = new THREE.Group();
   const gunMat = new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.5, metalness:0.6 });
@@ -1153,7 +1132,6 @@ function createWeaponModel(type) {
   return g;
 }
 
-/* ========== УДАЛЁННЫЙ ИГРОК ========== */
 function createRemotePlayerModel() {
   const g = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({ color:0x4488dd, roughness:0.6, emissive:0x112244 });
@@ -1176,7 +1154,6 @@ function createRemotePlayerModel() {
   return { group:g, hitHead, hitBody };
 }
 
-/* ========== БОТ ========== */
 function createBot(x, z) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
