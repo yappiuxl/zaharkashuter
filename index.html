@@ -997,9 +997,10 @@ function tryShoot() {
     flashHit(first.point, part === 'head');
     
     if (net.isOnline) {
-      net.conn.send({ t:'hit', dmg, head: part === 'head' });
+      // Отправляем урон
+      net.conn.send({ t:'dmg', dmg, head: part === 'head' });
       
-      // ХОСТ: если попал по гостю (remotePlayer), сразу вычитаем его ХП и обновляем
+      // Если я хост, сразу применяю урон гостю локально
       if (net.isHost) {
         net.guestHp -= dmg;
         if (net.guestHp < 0) net.guestHp = 0;
@@ -1009,7 +1010,6 @@ function tryShoot() {
         // Отправляем новые HP гостю
         net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
         
-        // Если гость умер
         if (net.guestHp <= 0) {
           net.conn.send({ t:'kill', killer: net.myName, victim: net.otherName });
         }
@@ -1176,11 +1176,8 @@ function handlePeerData(data) {
   if (data.t === 'hello') {
     if (net.isHost) {
       net.otherName = data.name;
-      
-      // Хост решает, где спавнить гостя (напротив хоста)
       const guestSpawnX = 0;
       const guestSpawnZ = -25;
-      
       net.conn.send({ t:'start', name: net.myName, spawnX: guestSpawnX, spawnZ: guestSpawnZ });
       enterOnlineGame(0, 25, guestSpawnX, guestSpawnZ);
     }
@@ -1188,7 +1185,7 @@ function handlePeerData(data) {
   else if (data.t === 'start') {
     if (!net.isHost) {
       net.otherName = data.name;
-      enterOnlineGame(data.spawnX, data.spawnZ, 0, 25); // гость ставит себя на свои координаты
+      enterOnlineGame(data.spawnX, data.spawnZ, 0, 25);
     }
   }
   else if (data.t === 'input') {
@@ -1206,40 +1203,32 @@ function handlePeerData(data) {
       net.lastSnapshotTime = performance.now();
     }
   }
-  else if (data.t === 'hit') {
+  else if (data.t === 'dmg') {
+    // Получаем урон. Кто мы?
     if (net.isHost) {
-      // ХОСТ получает удар ОТ ГОСТЯ
+      // Мы хост, получаем урон от гостя
       net.hostHp -= data.dmg;
       if (net.hostHp < 0) net.hostHp = 0;
-      
-      // Обновляем свой интерфейс
       hpEl.textContent = net.hostHp;
       dmgFlash.style.opacity = '0.8';
       setTimeout(() => dmgFlash.style.opacity = '0', 100);
       addKillfeed(`${net.otherName} → ${net.myName}`, data.head ? '#ff4444' : '#ffaa44');
-      
-      // Отправляем гостю новые HP
       net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
       
-      // Если хост умер
       if (net.hostHp <= 0) {
         net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
         showDeathScreen(net.myName, net.otherName);
       }
     } else {
-      // ГОСТЬ получает удар ОТ ХОСТА (хост тоже отправляет hit)
+      // Мы гость, получаем урон от хоста
       net.guestHp -= data.dmg;
       if (net.guestHp < 0) net.guestHp = 0;
-      
       hpEl.textContent = net.guestHp;
       dmgFlash.style.opacity = '0.8';
       setTimeout(() => dmgFlash.style.opacity = '0', 100);
       addKillfeed(`${net.otherName} → ${net.myName}`, data.head ? '#ff4444' : '#ffaa44');
-      
-      // Отправляем хосту новые HP
       net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
       
-      // Если гость умер
       if (net.guestHp <= 0) {
         net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
         showDeathScreen(net.myName, net.otherName);
@@ -1247,14 +1236,13 @@ function handlePeerData(data) {
     }
   }
   else if (data.t === 'hp') {
-    // Синхронизация HP
     net.hostHp = data.host;
     net.guestHp = data.guest;
     
     if (net.isHost) {
-      otherHp.textContent = data.guest; // хост видит ХП гостя
+      otherHp.textContent = data.guest;
     } else {
-      otherHp.textContent = data.host; // гость видит ХП хоста
+      otherHp.textContent = data.host;
     }
     hpEl.textContent = net.isHost ? net.hostHp : net.guestHp;
   }
@@ -1273,13 +1261,11 @@ function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
   mode = MODE.PLAY;
   net.isOnline = true;
 
-  // Себя ставим на свою позицию
   player.pos.set(mySpawnX, 0, mySpawnZ);
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
   player.hp = 100; player.alive = true;
   player.onGround = true;
 
-  // Противника на его позицию
   remotePlayer.group.position.set(otherSpawnX, 0, otherSpawnZ);
   remotePlayer.group.rotation.y = 0;
   remotePlayer.group.visible = true;
@@ -1552,4 +1538,4 @@ initScene();
 animate();
 </script>
 </body>
-       </html>
+ </html>
