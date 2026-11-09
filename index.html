@@ -139,6 +139,41 @@
     accent-color: #ff8844;
   }
 
+  /* ============ РЕДАКТОР КНОПОК ============ */
+  #layoutEditor {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    flex-direction: column;
+    pointer-events: none;
+  }
+  #layoutEditor.show { display: flex; }
+
+  #layoutHeader {
+    position: absolute; top: 15px; left: 0; right: 0;
+    display: flex; justify-content: space-between;
+    padding: 0 20px; z-index: 305; pointer-events: auto;
+  }
+  #layoutSaveBtn {
+    background: #ff8844; color: #fff; font-weight: 900;
+    border: none; padding: 10px 20px; border-radius: 8px;
+    cursor: pointer; letter-spacing: 1px;
+  }
+  #layoutEditor p {
+    position: absolute; top: 70px; left: 20px; right: 20px;
+    color: #ff8844; text-align: center; font-weight: bold; font-size: 14px;
+    text-shadow: 0 0 5px #000;
+  }
+
+  /* Игровые кнопки внутри редактора */
+  #layoutEditor .editor-btn {
+    position: absolute; pointer-events: auto; touch-action: none;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; color: #fff; border-radius: 50%;
+    box-shadow: 0 0 15px rgba(255,255,255,0.2);
+    transform: translate(-50%, -50%);
+  }
+
   /* ============ МОДАЛКА ОНЛАЙН ============ */
   #netModal {
     position:fixed; inset:0; z-index:150;
@@ -297,61 +332,24 @@
   body.ingame-online #scoreboard { display:block; }
   body.ingame-online #otherHud { display:block; }
 
-  #fire {
-    position:fixed; right:45px; bottom:180px; width:110px; height:110px;
-    border-radius:50%; background:rgba(255,60,60,0.35);
-    border:3px solid rgba(255,100,100,0.85); z-index:11;
-    color:#fff; font:bold 20px sans-serif;
-    align-items:center; justify-content:center; touch-action:none;
-    box-shadow:0 0 20px rgba(255,60,60,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
+  /* Базовые стили для кнопок, они будут двигаться через JS */
+  .game-btn {
+    position: fixed;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: bold; touch-action: none;
+    border-radius: 50%;
+    opacity: var(--btn-opacity);
+    z-index: 11;
+    transform: translate(-50%, -50%) scale(var(--btn-scale));
   }
-  #fire:active { background:rgba(255,120,120,0.7); transform:scale(calc(var(--btn-scale) * 0.95)); }
-  
-  #jump {
-    position:fixed; right:45px; bottom:55px; width:100px; height:100px;
-    border-radius:50%; background:rgba(80,180,255,0.3);
-    border:3px solid rgba(120,200,255,0.85); z-index:11;
-    color:#fff; font:bold 18px sans-serif;
-    align-items:center; justify-content:center; touch-action:none;
-    box-shadow:0 0 20px rgba(80,180,255,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
-  }
-  #jump:active { background:rgba(120,200,255,0.65); transform:scale(calc(var(--btn-scale) * 0.95)); }
+  .game-btn:active { transform: translate(-50%, -50%) scale(calc(var(--btn-scale) * 0.95)); }
 
-  #swapBtn {
-    position:fixed; right:165px; bottom:55px; width:80px; height:80px;
-    border-radius:50%; background:rgba(200,200,50,0.3);
-    border:3px solid rgba(255,255,80,0.85); z-index:11;
-    color:#fff; font:bold 14px sans-serif;
-    align-items:center; justify-content:center; touch-action:none;
-    box-shadow:0 0 20px rgba(255,255,80,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
-  }
-  #swapBtn:active { background:rgba(255,255,120,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
-
-  #grenadeBtn {
-    position:fixed; right:165px; bottom:150px; width:80px; height:80px;
-    border-radius:50%; background:rgba(80,200,80,0.3);
-    border:3px solid rgba(120,255,120,0.85); z-index:11;
-    color:#fff; font:bold 14px sans-serif;
-    align-items:center; justify-content:center; touch-action:none;
-    box-shadow:0 0 20px rgba(80,200,80,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
-  }
-  #grenadeBtn:active { background:rgba(120,255,120,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
+  #fire { background:rgba(255,60,60,0.35); border:3px solid rgba(255,100,100,0.85); box-shadow:0 0 20px rgba(255,60,60,0.3); }
+  #jump { background:rgba(80,180,255,0.3); border:3px solid rgba(120,200,255,0.85); box-shadow:0 0 20px rgba(80,180,255,0.3); }
+  #swapBtn { background:rgba(200,200,50,0.3); border:3px solid rgba(255,255,80,0.85); box-shadow:0 0 20px rgba(255,255,80,0.3); }
+  #grenadeBtn { background:rgba(80,200,80,0.3); border:3px solid rgba(120,255,120,0.85); box-shadow:0 0 20px rgba(80,200,80,0.3); }
   #grenadeBtn.active { background:rgba(255,200,50,0.8); border-color: #fff; }
-
-  #reloadBtn {
-    position:fixed; right:255px; bottom:55px; width:80px; height:80px;
-    border-radius:50%; background:rgba(180,180,180,0.3);
-    border:3px solid rgba(220,220,220,0.85); z-index:11;
-    color:#fff; font:bold 14px sans-serif;
-    align-items:center; justify-content:center; touch-action:none;
-    box-shadow:0 0 20px rgba(180,180,180,0.3);
-    transform: scale(var(--btn-scale)); transform-origin: bottom right; opacity: var(--btn-opacity);
-  }
-  #reloadBtn:active { background:rgba(220,220,220,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
+  #reloadBtn { background:rgba(180,180,180,0.3); border:3px solid rgba(220,220,220,0.85); box-shadow:0 0 20px rgba(180,180,180,0.3); }
 
   #hud {
     position:fixed; top:15px; left:15px; color:#fff;
@@ -509,7 +507,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 1.7 · P2P<br>
+      ВЕРСИЯ 1.8 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -536,14 +534,11 @@
           <input type="range" id="sensInput" min="0.2" max="3" step="0.1" value="1">
         </div>
         <div class="setting-row">
-          <label>Размер кнопок <span id="sizeVal">100</span>%</label>
-          <input type="range" id="sizeInput" min="70" max="130" step="5" value="100">
-        </div>
-        <div class="setting-row">
           <label>Прозрачность <span id="opacityVal">100</span>%</label>
           <input type="range" id="opacityInput" min="20" max="100" step="10" value="100">
         </div>
-        <button class="menuBtn" id="saveSettingsBtn" style="margin-top:10px;">СОХРАНИТЬ</button>
+        <button class="menuBtn" id="layoutEditorBtn" style="margin-top:10px; background:rgba(80,180,255,0.3); border-color:rgba(120,200,255,0.6);">НАСТРОИТЬ РАСПОЛОЖЕНИЕ</button>
+        <button class="menuBtn" id="saveSettingsBtn" style="margin-top:10px;">СОХРАНИТЬ НАСТРОЙКИ</button>
       </div>
     </div>
     <div class="tabPanel" id="panel-shop">
@@ -554,6 +549,16 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- ================= РЕДАКТОР КНОПОК ================= -->
+<div id="layoutEditor">
+  <div id="layoutHeader">
+    <div style="color:#fff; font-weight: bold; text-shadow: 0 0 5px #000; font-size: 18px;">Настройка кнопок</div>
+    <button id="layoutSaveBtn">СОХРАНИТЬ</button>
+  </div>
+  <p>Двигай 1 пальцем. Меняй размер 2 пальцами (щипок).</p>
+  <div id="layoutContainer" style="position:absolute; inset:0;"></div>
 </div>
 
 <!-- ================= МОДАЛКА ОНЛАЙН ================= -->
@@ -626,11 +631,11 @@
   <div>HP: <span class="otherHp" id="otherHp">100</span></div>
 </div>
 <div id="killfeed"></div>
-<div id="jump">JUMP</div>
-<div id="swapBtn">SWAP</div>
-<div id="grenadeBtn">GRENADE</div>
-<div id="reloadBtn">RELOAD</div>
-<div id="fire">FIRE</div>
+<div id="jump" class="game-btn">JUMP</div>
+<div id="swapBtn" class="game-btn">SWAP</div>
+<div id="grenadeBtn" class="game-btn">GRENADE</div>
+<div id="reloadBtn" class="game-btn">RELOAD</div>
+<div id="fire" class="game-btn">FIRE</div>
 <button id="exitBtn">← В МЕНЮ</button>
 
 <div id="deathOverlay">
@@ -657,46 +662,216 @@ const PEER_PATH = '/';
 const PEER_SECURE = true;
 
 /* ============================================================
-   НАСТРОЙКИ ИГРОКА
+   НАСТРОЙКИ И РАСКЛАДКА ИГРОКА
    ============================================================ */
+const defaultLayout = {
+  fire: { x: window.innerWidth - 100, y: window.innerHeight - 250, size: 110 },
+  jump: { x: window.innerWidth - 100, y: window.innerHeight - 110, size: 100 },
+  swapBtn: { x: window.innerWidth - 220, y: window.innerHeight - 110, size: 80 },
+  reloadBtn: { x: window.innerWidth - 310, y: window.innerHeight - 110, size: 80 },
+  grenadeBtn: { x: window.innerWidth - 220, y: window.innerHeight - 200, size: 80 }
+};
+
 const userSettings = {
   sensitivity: parseFloat(localStorage.getItem('zs_sens')) || 1.0,
-  btnScale: parseInt(localStorage.getItem('zs_btnScale')) || 100,
-  btnOpacity: parseInt(localStorage.getItem('zs_btnOpacity')) || 100,
+  opacity: parseInt(localStorage.getItem('zs_opacity')) || 100,
+  layout: JSON.parse(localStorage.getItem('zs_layout')) || defaultLayout
 };
 
 const LOOK_SENS_BASE = 0.006;
 let LOOK_SENS = LOOK_SENS_BASE * userSettings.sensitivity;
 
 function applySettingsToUI() {
-  document.documentElement.style.setProperty('--btn-scale', userSettings.btnScale / 100);
-  document.documentElement.style.setProperty('--btn-opacity', userSettings.btnOpacity / 100);
+  document.documentElement.style.setProperty('--btn-opacity', userSettings.opacity / 100);
   LOOK_SENS = LOOK_SENS_BASE * userSettings.sensitivity;
   
   document.getElementById('sensVal').textContent = userSettings.sensitivity.toFixed(1);
-  document.getElementById('sizeVal').textContent = userSettings.btnScale;
-  document.getElementById('opacityVal').textContent = userSettings.btnOpacity;
+  document.getElementById('opacityVal').textContent = userSettings.opacity;
   
   document.getElementById('sensInput').value = userSettings.sensitivity;
-  document.getElementById('sizeInput').value = userSettings.btnScale;
-  document.getElementById('opacityInput').value = userSettings.btnOpacity;
+  document.getElementById('opacityInput').value = userSettings.opacity;
+  
+  applyLayoutToGame();
+}
+
+function applyLayoutToGame() {
+  const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'grenadeBtn'];
+  btns.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const conf = userSettings.layout[id];
+    if (conf) {
+      el.style.left = conf.x + 'px';
+      el.style.top = conf.y + 'px';
+      el.style.width = conf.size + 'px';
+      el.style.height = conf.size + 'px';
+    }
+  });
 }
 
 function saveSettings() {
   userSettings.sensitivity = parseFloat(document.getElementById('sensInput').value);
-  userSettings.btnScale = parseInt(document.getElementById('sizeInput').value);
-  userSettings.btnOpacity = parseInt(document.getElementById('opacityInput').value);
+  userSettings.opacity = parseInt(document.getElementById('opacityInput').value);
   
   localStorage.setItem('zs_sens', userSettings.sensitivity);
-  localStorage.setItem('zs_btnScale', userSettings.btnScale);
-  localStorage.setItem('zs_btnOpacity', userSettings.btnOpacity);
+  localStorage.setItem('zs_opacity', userSettings.opacity);
   
   applySettingsToUI();
   alert('Настройки сохранены!');
 }
 
 /* ============================================================
-   РЕЖИМЫ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+   РЕДАКТОР РАСКЛАДКИ
+   ============================================================ */
+let isEditingLayout = false;
+const layoutContainer = document.getElementById('layoutContainer');
+const layoutEditor = document.getElementById('layoutEditor');
+const dragState = { el: null, id: null, startX: 0, startY: 0, startLeft: 0, startTop: 0, pointers: new Set(), startDist: 0, startSize: 0 };
+
+document.getElementById('layoutEditorBtn').addEventListener('click', () => {
+  isEditingLayout = true;
+  layoutEditor.classList.add('show');
+  
+  // Очищаем и создаем копии кнопок
+  layoutContainer.innerHTML = '';
+  const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'grenadeBtn'];
+  btns.forEach(id => {
+    const conf = userSettings.layout[id];
+    const el = document.createElement('div');
+    el.className = 'editor-btn';
+    el.id = 'edit_' + id;
+    el.textContent = id === 'swapBtn' ? 'SWAP' : id === 'reloadBtn' ? 'RELOAD' : id === 'grenadeBtn' ? 'GRENADE' : id.toUpperCase();
+    
+    // Цвета как в игре
+    if (id === 'fire') { el.style.background = 'rgba(255,60,60,0.35)'; el.style.border = '3px solid rgba(255,100,100,0.85)'; }
+    if (id === 'jump') { el.style.background = 'rgba(80,180,255,0.3)'; el.style.border = '3px solid rgba(120,200,255,0.85)'; }
+    if (id === 'swapBtn') { el.style.background = 'rgba(200,200,50,0.3)'; el.style.border = '3px solid rgba(255,255,80,0.85)'; }
+    if (id === 'reloadBtn') { el.style.background = 'rgba(180,180,180,0.3)'; el.style.border = '3px solid rgba(220,220,220,0.85)'; }
+    if (id === 'grenadeBtn') { el.style.background = 'rgba(80,200,80,0.3)'; el.style.border = '3px solid rgba(120,255,120,0.85)'; }
+    
+    el.style.left = conf.x + 'px';
+    el.style.top = conf.y + 'px';
+    el.style.width = conf.size + 'px';
+    el.style.height = conf.size + 'px';
+    
+    // Стили для эдитора
+    el.style.position = 'absolute';
+    el.style.transform = 'translate(-50%, -50%)';
+    el.style.pointerEvents = 'auto';
+    el.style.touchAction = 'none';
+    el.style.fontSize = (conf.size / 5) + 'px';
+    
+    el.addEventListener('pointerdown', handlePointerDown);
+    el.addEventListener('pointermove', handlePointerMove);
+    el.addEventListener('pointerup', handlePointerUp);
+    el.addEventListener('pointercancel', handlePointerUp);
+    
+    layoutContainer.appendChild(el);
+  });
+});
+
+document.getElementById('layoutSaveBtn').addEventListener('click', () => {
+  isEditingLayout = false;
+  layoutEditor.classList.remove('show');
+  localStorage.setItem('zs_layout', JSON.stringify(userSettings.layout));
+  applyLayoutToGame();
+});
+
+function handlePointerDown(e) {
+  const el = e.currentTarget;
+  const id = el.id.replace('edit_', '');
+  
+  el.setPointerCapture(e.pointerId);
+  dragState.pointers.add(e.pointerId);
+  
+  if (dragState.pointers.size === 1) {
+    // Начало перетаскивания
+    dragState.el = el;
+    dragState.id = id;
+    dragState.startX = e.clientX;
+    dragState.startY = e.clientY;
+    dragState.startLeft = userSettings.layout[id].x;
+    dragState.startTop = userSettings.layout[id].y;
+  } else if (dragState.pointers.size === 2) {
+    // Начало ресайза (пинч)
+    dragState.el = el;
+    dragState.id = id;
+    const pts = Array.from(dragState.pointers);
+    const dist = Math.hypot(pts[0] - pts[1], pts[0] - pts[1]); // Заглушка, настоящий расчет ниже
+    // Правильный расчет расстояния:
+    const p1 = e.getPointerCapture ? e : null; 
+    // Получаем координаты второго пальца не так просто, нужна карта координат.
+    // Будем считать расстояние при движении.
+    dragState.startDist = 0; 
+    dragState.startSize = userSettings.layout[id].size;
+  }
+}
+
+// Для отслеживания мультитача нужно хранить координаты пальцев
+const pointerPos = {};
+document.addEventListener('pointerdown', e => { pointerPos[e.pointerId] = {x: e.clientX, y: e.clientY}; });
+document.addEventListener('pointermove', e => { pointerPos[e.pointerId] = {x: e.clientX, y: e.clientY}; });
+document.addEventListener('pointerup', e => { delete pointerPos[e.pointerId]; });
+
+function handlePointerMove(e) {
+  if (!isEditingLayout) return;
+  const el = e.currentTarget;
+  const id = el.id.replace('edit_', '');
+  
+  if (dragState.pointers.size === 1 && dragState.el === el) {
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    
+    let newX = dragState.startLeft + dx;
+    let newY = dragState.startTop + dy;
+    
+    // Ограничиваем краями экрана
+    const halfSize = userSettings.layout[id].size / 2;
+    newX = Math.max(halfSize, Math.min(window.innerWidth - halfSize, newX));
+    newY = Math.max(halfSize, Math.min(window.innerHeight - halfSize, newY));
+    
+    userSettings.layout[id].x = newX;
+    userSettings.layout[id].y = newY;
+    
+    el.style.left = newX + 'px';
+    el.style.top = newY + 'px';
+  } else if (dragState.pointers.size === 2 && dragState.el === el) {
+    const pIds = Array.from(dragState.pointers);
+    if (pointerPos[pIds[0]] && pointerPos[pIds[1]]) {
+      const dist = Math.hypot(
+        pointerPos[pIds[0]].x - pointerPos[pIds[1]].x,
+        pointerPos[pIds[0]].y - pointerPos[pIds[1]].y
+      );
+      
+      if (dragState.startDist === 0) {
+        dragState.startDist = dist;
+      } else {
+        const scale = dist / dragState.startDist;
+        let newSize = dragState.startSize * scale;
+        newSize = Math.max(60, Math.min(160, newSize)); // Ограничиваем 60-160px
+        
+        userSettings.layout[id].size = newSize;
+        el.style.width = newSize + 'px';
+        el.style.height = newSize + 'px';
+        el.style.fontSize = (newSize / 5) + 'px';
+      }
+    }
+  }
+}
+
+function handlePointerUp(e) {
+  dragState.pointers.delete(e.pointerId);
+  if (dragState.pointers.size === 0) {
+    dragState.el = null;
+    dragState.id = null;
+  } else if (dragState.pointers.size === 1) {
+    // Если остался 1 палец, сбрасываем пинч и переходим к перетаскиванию
+    dragState.startDist = 0;
+  }
+}
+
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ ИГРЫ
    ============================================================ */
 const MODE = { MENU: 0, PLAY_SOLO: 1, PLAY_ONLINE: 2 };
 let mode = MODE.MENU;
@@ -734,7 +909,6 @@ const net = {
   maxKills: 10,
 };
 
-// Константы
 const FLOOR = 60;
 const PLAYER_HEIGHT = 1.6;
 const GRAVITY = -22;
@@ -749,7 +923,6 @@ const WEAPON_STATS = {
   shotgun: { magSize: 8, reloadTime: 2500, damageBody: 40, damageHead: 100, fireRate: 800 }
 };
 
-// Бот
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3, REPOSITION:4, FLEE:5, PEEK:6 };
 const BOT_SIGHT_DIST = 65, BOT_ATTACK_DIST = 25, BOT_FOV = Math.PI * 0.85;
 const BOT_HEARING_DIST = 70, BOT_SPEED = 4.6, BOT_SPEED_FLEE = 6.5, BOT_SPEED_STRAFE = 5.5;
@@ -948,6 +1121,7 @@ function initScene() {
   });
 }
 
+/* ========== МОДЕЛИ ОРУЖИЯ ========== */
 function createWeaponModel(type) {
   const g = new THREE.Group();
   const gunMat = new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.5, metalness:0.6 });
@@ -979,6 +1153,7 @@ function createWeaponModel(type) {
   return g;
 }
 
+/* ========== УДАЛЁННЫЙ ИГРОК ========== */
 function createRemotePlayerModel() {
   const g = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({ color:0x4488dd, roughness:0.6, emissive:0x112244 });
@@ -1001,6 +1176,7 @@ function createRemotePlayerModel() {
   return { group:g, hitHead, hitBody };
 }
 
+/* ========== БОТ ========== */
 function createBot(x, z) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
@@ -2112,7 +2288,6 @@ tabs.forEach(tab => {
 });
 
 document.getElementById('sensInput').addEventListener('input', e => { document.getElementById('sensVal').textContent = e.target.value; });
-document.getElementById('sizeInput').addEventListener('input', e => { document.getElementById('sizeVal').textContent = e.target.value; });
 document.getElementById('opacityInput').addEventListener('input', e => { document.getElementById('opacityVal').textContent = e.target.value; });
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
 
