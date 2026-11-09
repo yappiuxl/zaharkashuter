@@ -114,6 +114,7 @@
   .menuBtn.net:active {
     background: linear-gradient(135deg, rgba(80,180,255,0.7), rgba(40,120,200,0.7));
   }
+  .menuBtn.record { background: rgba(255,60,60,0.2); border-color: rgba(255,60,60,0.5); color:#ff8888; }
 
   /* ============ НАСТРОЙКИ ============ */
   .settingsPanel {
@@ -322,10 +323,10 @@
   }
   #rightHalf { position:fixed; top:0; right:0; bottom:0; width:50%; z-index:5; touch-action:none; }
   #leftHalf  { position:fixed; top:0; left:0;  bottom:0; width:50%; z-index:5; touch-action:none; }
-  #leftHalf, #rightHalf, #stickL, #fire, #jump, #hud, #crosshair, #netBadge, #otherHud, #exitBtn, #killfeed, #swapBtn, #grenadeBtn, #scoreboard, #ammoHud, #reloadBtn { display:none; }
+  #leftHalf, #rightHalf, #stickL, #fire, #jump, #hud, #crosshair, #netBadge, #otherHud, #exitBtn, #killfeed, #swapBtn, #grenadeBtn, #scoreboard, #ammoHud, #reloadBtn, #crouchBtn, #sniperBtn, #pttBtn { display:none; }
   
   body.ingame #leftHalf, body.ingame #rightHalf { display:block; }
-  body.ingame #stickL, body.ingame #fire, body.ingame #jump, body.ingame #swapBtn, body.ingame #grenadeBtn, body.ingame #reloadBtn { display:flex; }
+  body.ingame #stickL, body.ingame #fire, body.ingame #jump, body.ingame #swapBtn, body.ingame #grenadeBtn, body.ingame #reloadBtn, body.ingame #crouchBtn, body.ingame #sniperBtn, body.ingame #pttBtn { display:flex; }
   body.ingame #hud, body.ingame #crosshair, body.ingame #netBadge, body.ingame #exitBtn, body.ingame #ammoHud { display:block; }
   body.ingame #killfeed { display:flex; }
   body.ingame-online #scoreboard { display:block; }
@@ -348,6 +349,15 @@
   #grenadeBtn { background:rgba(80,200,80,0.3); border:3px solid rgba(120,255,120,0.85); box-shadow:0 0 20px rgba(80,200,80,0.3); }
   #grenadeBtn.active { background:rgba(255,200,50,0.8); border-color: #fff; }
   #reloadBtn { background:rgba(180,180,180,0.3); border:3px solid rgba(220,220,220,0.85); box-shadow:0 0 20px rgba(180,180,180,0.3); }
+  
+  #crouchBtn { background:rgba(200,80,200,0.3); border:3px solid rgba(255,120,255,0.85); box-shadow:0 0 20px rgba(200,80,200,0.3); }
+  #crouchBtn.active { background:rgba(255,120,255,0.8); border-color: #fff; }
+  
+  #sniperBtn { background:rgba(100,150,255,0.3); border:3px solid rgba(150,200,255,0.85); box-shadow:0 0 20px rgba(100,150,255,0.3); }
+  #sniperBtn.active { background:rgba(150,200,255,0.8); border-color: #fff; }
+
+  #pttBtn { background:rgba(255,150,50,0.3); border:3px solid rgba(255,180,100,0.85); box-shadow:0 0 20px rgba(255,150,50,0.3); width: 80px; height: 80px; }
+  #pttBtn.active { background:rgba(255,180,100,0.8); border-color: #fff; }
 
   #hud {
     position:fixed; top:15px; left:15px; color:#fff;
@@ -429,10 +439,14 @@
   #crosshair {
     position:fixed; left:50%; top:50%; width:22px; height:22px;
     margin:-11px 0 0 -11px; z-index:9; pointer-events:none;
+    transition: background 0.1s, transform 0.1s;
   }
   #crosshair::before, #crosshair::after { content:''; position:absolute; background:rgba(255,255,255,0.7); }
   #crosshair::before { left:10px; top:0; width:2px; height:22px; }
   #crosshair::after  { top:10px; left:0; height:2px; width:22px; }
+  #crosshair.hit-body::before, #crosshair.hit-body::after { background: #ffff00; }
+  #crosshair.hit-head::before, #crosshair.hit-head::after { background: #ff3333; }
+  
   #damageFlash {
     position:fixed; inset:0; pointer-events:none; z-index:8;
     background:radial-gradient(circle, transparent 40%, rgba(255,0,0,0.6) 100%);
@@ -474,6 +488,40 @@
   }
   #deathOverlay button:active { transform:scale(0.97); }
 
+  #hpBarContainer {
+    position: fixed; top: 15px; left: 15px; width: 200px; height: 20px;
+    background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid #fff; overflow: hidden; display: none;
+  }
+  body.ingame #hpBarContainer { display: block; }
+  #hpBarFill {
+    height: 100%; background: #ff3333; width: 100%; transition: width 0.2s;
+  }
+
+  /* HP bar над головой (для ботов/игроков) */
+  .enemy-hp-bar {
+    position: fixed; width: 60px; height: 6px;
+    background: #333; border-radius: 3px; transform: translate(-50%, -50%);
+    display: none; z-index: 8; overflow: hidden;
+  }
+  .enemy-hp-bar.show { display: block; }
+  .enemy-hp-fill { height: 100%; background: #ff3333; width: 100%; transition: width 0.2s; }
+
+  #scopeOverlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1000;
+    display: none; justify-content: center; align-items: center;
+    background: rgba(0,0,0,0.9);
+  }
+  #scopeOverlay.show { display: flex; }
+  #scopeCircle {
+    width: 80vw; height: 80vw; max-width: 80vh; max-height: 80vh;
+    border-radius: 50%; border: 2px solid #000;
+    box-shadow: 0 0 0 100vw rgba(0,0,0,0.9); /* затемнение вокруг круга */
+    display: flex; justify-content: center; align-items: center;
+  }
+  #scopeCrossV, #scopeCrossH { position: absolute; background: rgba(0,0,0,0.8); }
+  #scopeCrossV { width: 2px; height: 100%; }
+  #scopeCrossH { height: 2px; width: 100%; }
+
   @media (orientation: portrait) {
     #menu::before {
       content:'ПОВЕРНИ УСТРОЙСТВО';
@@ -505,7 +553,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 1.8 · P2P<br>
+      ВЕРСИЯ 2.0 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -524,6 +572,7 @@
       </div>
       <button id="playBtn" class="menuBtn primary">ИГРАТЬ</button>
       <button id="netBtn" class="menuBtn net">🌐 ИГРАТЬ ПО СЕТИ</button>
+      <button id="recordBtn" class="menuBtn record" style="margin-top: 10px;">🔴 ЗАПИСЬ ЭКРАНА</button>
     </div>
     <div class="tabPanel" id="panel-settings">
       <div class="settingsPanel">
@@ -568,7 +617,34 @@
     <div id="netStatus" class="netStatus">ВЫБЕРИ РЕЖИМ</div>
 
     <div class="netView show" id="netStartView">
-      <p>Прямое P2P-соединение через WebRTC. Один игрок создаёт комнату — другой подключается по коду. Игра до 10 киллов!</p>
+      <p>Прямое P2P-соединение через WebRTC. Выбери режим игры.</p>
+      
+      <h3>РЕЖИМ</h3>
+      <select id="netModeSelect" class="netInput" style="appearance: none; -webkit-appearance: none;">
+        <option value="kills">До 10 киллов</option>
+        <option value="time">На время</option>
+      </select>
+      
+      <div id="netKillsDiv">
+        <h3>ДО СКОЛЬКИ КИЛЛОВ</h3>
+        <select id="netKillsSelect" class="netInput" style="appearance: none; -webkit-appearance: none;">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="30">30</option>
+        </select>
+      </div>
+      
+      <div id="netTimeDiv" style="display: none;">
+        <h3>ВРЕМЯ МАТЧА</h3>
+        <select id="netTimeSelect" class="netInput" style="appearance: none; -webkit-appearance: none;">
+          <option value="3">3 минуты</option>
+          <option value="5" selected>5 минут</option>
+          <option value="10">10 минут</option>
+        </select>
+      </div>
+
       <button class="netBtn primary" id="hostBtn">СОЗДАТЬ КОМНАТУ</button>
       <button class="netBtn full" id="joinBtn">ПОДКЛЮЧИТЬСЯ ПО КОДУ</button>
     </div>
@@ -620,6 +696,7 @@
 <div id="leftHalf"></div>
 <div id="rightHalf"></div>
 <div id="stickL"><div class="knob" id="knobL"></div></div>
+<div id="hpBarContainer"><div id="hpBarFill"></div></div>
 <div id="hud">HP: <span id="hp">100</span></div>
 <div id="ammoHud">30 / 30</div>
 <div id="scoreboard">Счёт: 0 - 0</div>
@@ -630,16 +707,39 @@
 </div>
 <div id="killfeed"></div>
 <div id="jump" class="game-btn">JUMP</div>
+<div id="crouchBtn" class="game-btn">CROUCH</div>
 <div id="swapBtn" class="game-btn">SWAP</div>
+<div id="sniperBtn" class="game-btn">SNIPER</div>
 <div id="grenadeBtn" class="game-btn">GRENADE</div>
 <div id="reloadBtn" class="game-btn">RELOAD</div>
 <div id="fire" class="game-btn">FIRE</div>
+<div id="pttBtn" class="game-btn">🎤</div>
 <button id="exitBtn">← В МЕНЮ</button>
+
+<div id="enemyHpBar" class="enemy-hp-bar"><div id="enemyHpFill" class="enemy-hp-fill"></div></div>
+
+<!-- Scope Overlay -->
+<div id="scopeOverlay">
+  <div id="scopeCircle">
+    <div id="scopeCrossV"></div>
+    <div id="scopeCrossH"></div>
+  </div>
+</div>
 
 <div id="deathOverlay">
   <h2>ТЫ СДОХ</h2>
   <div class="stats" id="deathStats">Убит: <b id="deathKiller">-</b></div>
   <button id="deathMenu">В МЕНЮ</button>
+</div>
+
+<!-- Модалка победы/поражения -->
+<div id="winOverlay" style="position:fixed; inset:0; z-index:100; display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); color:#fff; text-align:center;">
+  <div style="font-size: 80px;" id="winIcon">🏆</div>
+  <h2 style="font-size: 50px; font-weight: 900; letter-spacing: 5px; text-transform: uppercase;" id="winTitle">ПОБЕДА</h2>
+  <div style="font-size: 24px; color: #aaa;" id="winScore">Счёт: 10 - 5</div>
+  <div style="font-size: 16px; color: #ffaa44; margin-top: 10px;" id="winStats">Убийств: 10 | Смертей: 5</div>
+  <button id="winRestart" style="margin-top:20px; padding: 14px 40px; background: linear-gradient(135deg, #ff8844, #ff5522); border: none; border-radius: 12px; font: 900 18px sans-serif; cursor: pointer; color: #fff; box-shadow: 0 0 20px rgba(255,100,50,0.5);">РЕВАНШ</button>
+  <button id="winMenu" style="margin-top:10px; padding: 14px 40px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; font: 900 18px sans-serif; cursor: pointer; color: #fff;">В МЕНЮ</button>
 </div>
 
 <script type="importmap">
@@ -665,9 +765,12 @@ const PEER_SECURE = true;
 const defaultLayout = {
   fire: { x: window.innerWidth - 100, y: window.innerHeight - 250, size: 110 },
   jump: { x: window.innerWidth - 100, y: window.innerHeight - 110, size: 100 },
+  crouchBtn: { x: window.innerWidth - 100, y: window.innerHeight - 240, size: 80 }, 
   swapBtn: { x: window.innerWidth - 220, y: window.innerHeight - 110, size: 80 },
   reloadBtn: { x: window.innerWidth - 310, y: window.innerHeight - 110, size: 80 },
-  grenadeBtn: { x: window.innerWidth - 220, y: window.innerHeight - 200, size: 80 }
+  grenadeBtn: { x: window.innerWidth - 220, y: window.innerHeight - 200, size: 80 },
+  sniperBtn: { x: window.innerWidth - 310, y: window.innerHeight - 200, size: 80 },
+  pttBtn: { x: 80, y: window.innerHeight - 100, size: 80 }
 };
 
 const userSettings = {
@@ -693,7 +796,7 @@ function applySettingsToUI() {
 }
 
 function applyLayoutToGame() {
-  const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'grenadeBtn'];
+  const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'grenadeBtn', 'crouchBtn', 'sniperBtn', 'pttBtn'];
   btns.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -731,19 +834,22 @@ document.getElementById('layoutEditorBtn').addEventListener('click', () => {
   layoutEditor.classList.add('show');
   
   layoutContainer.innerHTML = '';
-  const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'grenadeBtn'];
+  const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'grenadeBtn', 'crouchBtn', 'sniperBtn', 'pttBtn'];
   btns.forEach(id => {
     const conf = userSettings.layout[id];
     const el = document.createElement('div');
     el.className = 'editor-btn';
     el.id = 'edit_' + id;
-    el.textContent = id === 'swapBtn' ? 'SWAP' : id === 'reloadBtn' ? 'RELOAD' : id === 'grenadeBtn' ? 'GRENADE' : id.toUpperCase();
+    el.textContent = id === 'swapBtn' ? 'SWAP' : id === 'reloadBtn' ? 'RELOAD' : id === 'grenadeBtn' ? 'GRENADE' : id === 'crouchBtn' ? 'CROUCH' : id === 'sniperBtn' ? 'SNIPER' : id === 'pttBtn' ? '🎤' : id.toUpperCase();
     
     if (id === 'fire') { el.style.background = 'rgba(255,60,60,0.35)'; el.style.border = '3px solid rgba(255,100,100,0.85)'; }
     if (id === 'jump') { el.style.background = 'rgba(80,180,255,0.3)'; el.style.border = '3px solid rgba(120,200,255,0.85)'; }
     if (id === 'swapBtn') { el.style.background = 'rgba(200,200,50,0.3)'; el.style.border = '3px solid rgba(255,255,80,0.85)'; }
     if (id === 'reloadBtn') { el.style.background = 'rgba(180,180,180,0.3)'; el.style.border = '3px solid rgba(220,220,220,0.85)'; }
     if (id === 'grenadeBtn') { el.style.background = 'rgba(80,200,80,0.3)'; el.style.border = '3px solid rgba(120,255,120,0.85)'; }
+    if (id === 'crouchBtn') { el.style.background = 'rgba(200,80,200,0.3)'; el.style.border = '3px solid rgba(255,120,255,0.85)'; }
+    if (id === 'sniperBtn') { el.style.background = 'rgba(100,150,255,0.3)'; el.style.border = '3px solid rgba(150,200,255,0.85)'; }
+    if (id === 'pttBtn') { el.style.background = 'rgba(255,150,50,0.3)'; el.style.border = '3px solid rgba(255,180,100,0.85)'; }
     
     el.style.left = conf.x + 'px';
     el.style.top = conf.y + 'px';
@@ -861,9 +967,10 @@ let colliders = [], tracers = [], grenades = [], bloodParticles = [];
 let raycaster;
 let player, remotePlayer, bot;
 let platforms = [];
-let weaponModels = { rifle: null, shotgun: null, grenade: null };
+let weaponModels = { rifle: null, shotgun: null, grenade: null, sniper: null };
 
 const hpEl = document.getElementById('hp');
+const hpBarFill = document.getElementById('hpBarFill');
 const ammoEl = document.getElementById('ammoHud');
 const dmgFlash = document.getElementById('damageFlash');
 const netBadge = document.getElementById('netBadge');
@@ -872,6 +979,9 @@ const otherHp = document.getElementById('otherHp');
 const killfeed = document.getElementById('killfeed');
 const scoreboard = document.getElementById('scoreboard');
 const grenadeBtn = document.getElementById('grenadeBtn');
+const scopeOverlay = document.getElementById('scopeOverlay');
+const enemyHpBar = document.getElementById('enemyHpBar');
+const enemyHpFill = document.getElementById('enemyHpFill');
 
 const menuCam = {
   angle: 0, speed: 0.12, radius: 14, height: 3.2,
@@ -881,26 +991,32 @@ const menuCam = {
 const net = {
   peer: null, conn: null, isHost: false, isOnline: false,
   myName: 'Игрок', otherName: 'Другой', roomCode: null, connected: false,
-  guestInput: { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false, weapon:'rifle', reload:false },
+  guestInput: { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false, weapon:'rifle', reload:false, crouch:false },
   lastSnapshot: null, lastSnapshotTime: 0,
   hostHp: 100, guestHp: 100,
   hostScore: 0, guestScore: 0,
+  hostDeaths: 0, guestDeaths: 0,
   maxKills: 10,
+  timeLimit: 0,
+  gameStartTime: 0,
 };
 
 // Константы
 const FLOOR = 60;
 const PLAYER_HEIGHT = 1.6;
+const CROUCH_HEIGHT = 1.1;
 const GRAVITY = -22;
 const JUMP_VELOCITY = 8.0;
 const PLAYER_SPEED = 8;
+const PLAYER_CROUCH_SPEED = 4;
 const PLAYER_RADIUS = 0.4;
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 
 const WEAPON_STATS = {
   rifle: { magSize: 30, reloadTime: 2000, damageBody: 20, damageHead: 100, fireRate: 110 },
-  shotgun: { magSize: 8, reloadTime: 2500, damageBody: 40, damageHead: 100, fireRate: 800 }
+  shotgun: { magSize: 8, reloadTime: 2500, damageBody: 40, damageHead: 100, fireRate: 800 },
+  sniper: { magSize: 5, reloadTime: 3000, damageBody: 200, damageHead: 200, fireRate: 1500 }
 };
 
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3, REPOSITION:4, FLEE:5, PEEK:6 };
@@ -919,10 +1035,12 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const sounds = {
   shot: createTone(150, 0.1, 'sawtooth'),
   shotgun: createTone(100, 0.2, 'square'),
+  sniper: createTone(80, 0.3, 'sawtooth'),
   hit: createTone(300, 0.05, 'sine'),
   explode: createTone(60, 0.4, 'sawtooth'),
   headshot: createTone(600, 0.1, 'sine'),
-  reload: createTone(400, 0.15, 'triangle')
+  reload: createTone(400, 0.15, 'triangle'),
+  step: createTone(100, 0.05, 'triangle')
 };
 
 function createTone(freq, duration, type) {
@@ -1066,8 +1184,11 @@ function initScene() {
     hp: 100, alive: true,
     onGround: true, coyoteTimer: 0,
     weapon: 'rifle', grenades: 3, lastGrenadeTime: 0,
-    ammo: { rifle: WEAPON_STATS.rifle.magSize, shotgun: WEAPON_STATS.shotgun.magSize },
-    isReloading: false, lastShotTime: 0, reloadEndTime: 0
+    ammo: { rifle: WEAPON_STATS.rifle.magSize, shotgun: WEAPON_STATS.shotgun.magSize, sniper: WEAPON_STATS.sniper.magSize },
+    isReloading: false, lastShotTime: 0, reloadEndTime: 0,
+    isCrouching: false,
+    isScoped: false,
+    stepTimer: 0
   };
 
   remotePlayer = createRemotePlayerModel();
@@ -1081,17 +1202,21 @@ function initScene() {
   weaponModels.rifle = createWeaponModel('rifle');
   weaponModels.shotgun = createWeaponModel('shotgun');
   weaponModels.grenade = createWeaponModel('grenade');
+  weaponModels.sniper = createWeaponModel('sniper');
   
   weaponModels.rifle.visible = true;
   weaponModels.shotgun.visible = false;
   weaponModels.grenade.visible = false;
+  weaponModels.sniper.visible = false;
   
   camera.add(weaponModels.rifle);
   camera.add(weaponModels.shotgun);
   camera.add(weaponModels.grenade);
+  camera.add(weaponModels.sniper);
   scene.add(camera);
 
   updateAmmoUI();
+  updateHpUI();
 
   addEventListener('resize', () => {
     if (!camera) return;
@@ -1122,6 +1247,22 @@ function createWeaponModel(type) {
     const pump = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.18), gunMat);
     pump.position.set(0.25, -0.3, -0.6); g.add(pump);
   }
+  else if (type === 'sniper') {
+    const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, 0.75), gunMat);
+    receiver.position.set(0.25, -0.25, -0.5); g.add(receiver);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 10), metalMat);
+    barrel.rotation.x = Math.PI / 2; barrel.position.set(0.25, -0.24, -1.2); g.add(barrel);
+    // Оптика
+    const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 10), metalMat);
+    scope.rotation.x = Math.PI / 2; scope.position.set(0.25, -0.12, -0.4); g.add(scope);
+    const scopeLens = new THREE.Mesh(new THREE.CircleGeometry(0.045, 10), new THREE.MeshBasicMaterial({color: 0x88ccff}));
+    scopeLens.position.set(0.25, -0.12, -0.55); g.add(scopeLens);
+    // Сошки
+    const stand1 = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4), metalMat);
+    stand1.position.set(0.2, -0.35, -0.9); stand1.rotation.x = 0.5; g.add(stand1);
+    const stand2 = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4), metalMat);
+    stand2.position.set(0.3, -0.35, -0.9); stand2.rotation.x = 0.5; g.add(stand2);
+  }
   else if (type === 'grenade') {
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), 
       new THREE.MeshStandardMaterial({ color:0x2a3a1a, roughness:0.6 }));
@@ -1151,7 +1292,7 @@ function createRemotePlayerModel() {
                                  new THREE.MeshBasicMaterial({visible:false}));
   hitBody.position.y = 1.05; hitBody.userData = { part:'body' }; g.add(hitBody);
 
-  return { group:g, hitHead, hitBody };
+  return { group:g, hitHead, hitBody, isCrouching: false };
 }
 
 function createBot(x, z) {
@@ -1175,7 +1316,7 @@ function createBot(x, z) {
   hitBody.position.y = 1.05; hitBody.userData = { part:'body', isBot: true }; g.add(hitBody);
 
   const b = {
-    group: g, alive: true, hp: BOT_HP, hitHead, hitBody,
+    group: g, alive: true, hp: BOT_HP, maxHp: BOT_HP, hitHead, hitBody,
     state: BOT_STATE.PATROL, lastShot: 0, lastDamaged: -99999, respawnAt: 0,
     facing: 0, path: null, pathIdx: 0, repathAt: 0,
     lastSeenX: 0, lastSeenZ: 0, lastSeenTime: 0, hasSeenPlayer: false, spottedAt: 0,
@@ -1234,7 +1375,7 @@ function groundHeightAt(nx, nz, fromY, radius) {
   return best;
 }
 
-function stepPlayerPhysics(state, moveInput, dt) {
+function stepPlayerPhysics(state, moveInput, dt, isCrouching) {
   const yaw = state.yaw;
   const forwardX = -Math.sin(yaw);
   const forwardZ = -Math.cos(yaw);
@@ -1246,7 +1387,8 @@ function stepPlayerPhysics(state, moveInput, dt) {
   const mlen = Math.hypot(mvX, mvZ);
   if (mlen > 1) { mvX /= mlen; mvZ /= mlen; }
 
-  const step = PLAYER_SPEED * dt;
+  const speed = isCrouching ? PLAYER_CROUCH_SPEED : PLAYER_SPEED;
+  const step = speed * dt;
   const nx = state.pos.x + mvX * step;
   const nz = state.pos.z + mvZ * step;
 
@@ -1268,7 +1410,7 @@ function stepPlayerPhysics(state, moveInput, dt) {
         if (state.pos.z + PLAYER_RADIUS < b.min.z || state.pos.z - PLAYER_RADIUS > b.max.z) continue;
         if (b.min.y > state.pos.y + 0.1 && b.min.y < ceilY) ceilY = b.min.y;
       }
-      if (ceilY !== Infinity) ny = Math.min(ny, ceilY - PLAYER_HEIGHT);
+      if (ceilY !== Infinity) ny = Math.min(ny, ceilY - (isCrouching?CROUCH_HEIGHT:PLAYER_HEIGHT));
       state.vy = 0;
     }
     state.onGround = false;
@@ -1386,19 +1528,59 @@ jumpBtn.addEventListener('mousedown', () => {
   if (mode !== MODE.MENU && player.alive) tryJump(player);
 });
 
+const crouchBtn = document.getElementById('crouchBtn');
+crouchBtn.addEventListener('touchstart', e => {
+  e.preventDefault(); e.stopPropagation();
+  if (mode !== MODE.MENU && player.alive) {
+    player.isCrouching = !player.isCrouching;
+    crouchBtn.classList.toggle('active', player.isCrouching);
+  }
+}, { passive:false });
+crouchBtn.addEventListener('mousedown', () => {
+  if (mode !== MODE.MENU && player.alive) {
+    player.isCrouching = !player.isCrouching;
+    crouchBtn.classList.toggle('active', player.isCrouching);
+  }
+});
+
 const swapBtn = document.getElementById('swapBtn');
 swapBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
   if (mode !== MODE.MENU && player.alive && !player.isReloading) {
-    if (player.weapon === 'grenade') {
-      player.weapon = 'rifle';
-      grenadeBtn.classList.remove('active');
-    } else {
-      player.weapon = player.weapon === 'rifle' ? 'shotgun' : 'rifle';
-    }
-    sounds.shot(0, 0.1);
+    if (player.weapon === 'grenade') { player.weapon = 'rifle'; grenadeBtn.classList.remove('active'); }
+    else if (player.weapon === 'rifle') { player.weapon = 'shotgun'; }
+    else { player.weapon = 'rifle'; }
     updateWeaponVisual();
     updateAmmoUI();
+    player.isScoped = false;
+    scopeOverlay.classList.remove('show');
+    sounds.shot(0, 0.1);
+  }
+}, { passive:false });
+
+const sniperBtn = document.getElementById('sniperBtn');
+sniperBtn.addEventListener('touchstart', e => {
+  e.preventDefault(); e.stopPropagation();
+  if (mode !== MODE.MENU && player.alive && !player.isReloading) {
+    if (player.weapon === 'sniper') {
+      // Прицеливание при повторном нажатии
+      player.isScoped = !player.isScoped;
+      sniperBtn.classList.toggle('active', player.isScoped);
+      scopeOverlay.classList.toggle('show', player.isScoped);
+      camera.fov = player.isScoped ? 20 : 70;
+      camera.updateProjectionMatrix();
+    } else {
+      player.weapon = 'sniper';
+      updateWeaponVisual();
+      updateAmmoUI();
+      sniperBtn.classList.add('active');
+      player.isScoped = true;
+      scopeOverlay.classList.add('show');
+      camera.fov = 20;
+      camera.updateProjectionMatrix();
+      grenadeBtn.classList.remove('active');
+    }
+    sounds.shot(0, 0.1);
   }
 }, { passive:false });
 
@@ -1412,6 +1594,9 @@ grenadeBtn.addEventListener('touchstart', e => {
       player.weapon = 'grenade';
       grenadeBtn.classList.add('active');
     }
+    player.isScoped = false;
+    scopeOverlay.classList.remove('show');
+    sniperBtn.classList.remove('active');
     sounds.shot(0, 0.1);
     updateWeaponVisual();
     updateAmmoUI();
@@ -1431,14 +1616,21 @@ fireBtn.addEventListener('touchcancel',e => { e.preventDefault(); e.stopPropagat
 fireBtn.addEventListener('mousedown',  () => input.fire = true);
 fireBtn.addEventListener('mouseup',    () => input.fire = false);
 
+const pttBtn = document.getElementById('pttBtn');
+let pttActive = false;
+pttBtn.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); pttActive = true; pttBtn.classList.add('active'); });
+pttBtn.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); pttActive = false; pttBtn.classList.remove('active'); });
+
 function updateWeaponVisual() {
   weaponModels.rifle.visible = false;
   weaponModels.shotgun.visible = false;
   weaponModels.grenade.visible = false;
+  weaponModels.sniper.visible = false;
   
   if (player.weapon === 'rifle') weaponModels.rifle.visible = true;
   else if (player.weapon === 'shotgun') weaponModels.shotgun.visible = true;
   else if (player.weapon === 'grenade') weaponModels.grenade.visible = true;
+  else if (player.weapon === 'sniper') weaponModels.sniper.visible = true;
 }
 
 function updateAmmoUI() {
@@ -1465,6 +1657,15 @@ function startReload() {
   player.reloadEndTime = performance.now() + stats.reloadTime;
   sounds.reload(0, 0.5);
   updateAmmoUI();
+}
+
+function updateHpUI() {
+  const hp = player ? player.hp : 100;
+  hpEl.textContent = hp;
+  hpBarFill.style.width = Math.max(0, hp) + '%';
+  if (hp < 30) hpBarFill.style.background = '#ff0000';
+  else if (hp < 60) hpBarFill.style.background = '#ffaa00';
+  else hpBarFill.style.background = '#00cc00';
 }
 
 /* ========== СТРЕЛЬБА ========== */
@@ -1494,14 +1695,15 @@ function tryShoot() {
   player.ammo[player.weapon]--;
   updateAmmoUI();
 
-  const model = player.weapon === 'rifle' ? weaponModels.rifle : weaponModels.shotgun;
+  const model = player.weapon === 'rifle' ? weaponModels.rifle : player.weapon === 'shotgun' ? weaponModels.shotgun : weaponModels.sniper;
   if (model) {
     model.position.z = 0.05;
     setTimeout(() => { if (model) model.position.z = 0; }, 50);
   }
 
   if (player.weapon === 'rifle') sounds.shot(0, 0.5);
-  else sounds.shotgun(0, 0.8);
+  else if (player.weapon === 'shotgun') sounds.shotgun(0, 0.8);
+  else sounds.sniper(0, 1.0);
 
   const shootDir = new THREE.Vector3();
   const origin = new THREE.Vector3();
@@ -1527,8 +1729,12 @@ function tryShoot() {
 
   if (first.object.userData.part) {
     const isHead = first.object.userData.part === 'head';
-    const dmg = isHead ? stats.damageHead : stats.damageBody;
-
+    let dmg = isHead ? stats.damageHead : stats.damageBody;
+    
+    // Снайперка всегда ваншотит в тело
+    if (player.weapon === 'sniper' && !isHead) dmg = 100;
+    
+    showHitmarker(isHead);
     spawnBlood(first.point);
     if (isHead) sounds.headshot(0, 0.5);
     else sounds.hit(0, 0.5);
@@ -1560,6 +1766,17 @@ function tryShoot() {
       }
     }
   }
+}
+
+function showHitmarker(isHead) {
+  const ch = document.getElementById('crosshair');
+  ch.classList.remove('hit-body', 'hit-head');
+  if (isHead) ch.classList.add('hit-head');
+  else ch.classList.add('hit-body');
+  
+  setTimeout(() => {
+    ch.classList.remove('hit-body', 'hit-head');
+  }, 200);
 }
 
 function throwGrenade() {
@@ -1640,7 +1857,7 @@ function updateGrenades(dt, now) {
             if (dmg > 0) {
               player.hp -= dmg;
               if (player.hp < 0) player.hp = 0;
-              hpEl.textContent = player.hp;
+              updateHpUI();
               dmgFlash.style.opacity = '0.8';
               setTimeout(() => dmgFlash.style.opacity = '0', 100);
               if (player.hp <= 0) {
@@ -1719,22 +1936,67 @@ function updateScoreboard() {
 }
 
 function checkWinCondition() {
-  if (net.hostScore >= net.maxKills) gameWinner = 'host';
-  else if (net.guestScore >= net.maxKills) gameWinner = 'guest';
+  if (gameWinner) return; // Уже выиграли
   
+  if (net.maxKills > 0) {
+    if (net.hostScore >= net.maxKills) gameWinner = 'host';
+    else if (net.guestScore >= net.maxKills) gameWinner = 'guest';
+  }
+
+  if (net.timeLimit > 0) {
+    const elapsed = (performance.now() - net.gameStartTime) / 1000;
+    if (elapsed >= net.timeLimit * 60) {
+      if (net.hostScore > net.guestScore) gameWinner = 'host';
+      else if (net.guestScore > net.hostScore) gameWinner = 'guest';
+      else gameWinner = 'draw';
+    }
+  }
+
   if (gameWinner) {
     player.alive = false;
     input.fire = false;
-    const isMe = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
-    document.querySelector('#deathOverlay h2').textContent = isMe ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
-    document.querySelector('#deathOverlay h2').style.color = isMe ? '#00ff00' : '#ff3333';
-    document.getElementById('deathKiller').textContent = `${net.hostScore} : ${net.guestScore}`;
-    document.getElementById('deathOverlay').classList.add('show');
+    const isMeWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
+    
+    const winOverlay = document.getElementById('winOverlay');
+    const winIcon = document.getElementById('winIcon');
+    const winTitle = document.getElementById('winTitle');
+    const winScore = document.getElementById('winScore');
+    const winStats = document.getElementById('winStats');
+    
+    if (gameWinner === 'draw') {
+      winIcon.textContent = '🤝';
+      winTitle.textContent = 'НИЧЬЯ';
+      winTitle.style.color = '#ffaa44';
+    } else if (isMeWin) {
+      winIcon.textContent = '🏆';
+      winTitle.textContent = 'ПОБЕДА';
+      winTitle.style.color = '#00ff00';
+    } else {
+      winIcon.textContent = '💀';
+      winTitle.textContent = 'ПОРАЖЕНИЕ';
+      winTitle.style.color = '#ff3333';
+    }
+
+    const myScore = net.isHost ? net.hostScore : net.guestScore;
+    const enemyScore = net.isHost ? net.guestScore : net.hostScore;
+    const myDeaths = net.isHost ? net.hostDeaths : net.guestDeaths;
+
+    winScore.textContent = `Счёт: ${myScore} - ${enemyScore}`;
+    winStats.textContent = `Убийств: ${myScore} | Смертей: ${myDeaths}`;
+    
+    winOverlay.style.display = 'flex';
+    document.getElementById('deathOverlay').classList.remove('show');
   }
 }
 
 function showDeathScreen(victim, killer) {
   if (victim !== net.myName && victim !== 'Игрок') return;
+  
+  if (mode === MODE.PLAY_ONLINE) {
+    if (net.isHost) net.hostDeaths++;
+    else net.guestDeaths++;
+  }
+  
   document.querySelector('#deathOverlay h2').textContent = 'ТЫ СДОХ';
   document.querySelector('#deathOverlay h2').style.color = '#ff3333';
   document.getElementById('deathKiller').textContent = killer;
@@ -1832,7 +2094,7 @@ function updateBot(dt, now) {
     if (Math.random() < BOT_ACCURACY) {
       player.hp -= BOT_DAMAGE;
       if (player.hp < 0) player.hp = 0;
-      hpEl.textContent = player.hp;
+      updateHpUI();
       dmgFlash.style.opacity = '0.8';
       setTimeout(() => dmgFlash.style.opacity = '0', 100);
       sounds.hit(0, 0.5);
@@ -2018,7 +2280,19 @@ function createRoom() {
   net.roomCode = genRoomCode();
   net.hostScore = 0;
   net.guestScore = 0;
+  net.hostDeaths = 0;
+  net.guestDeaths = 0;
   gameWinner = null;
+  net.gameStartTime = performance.now();
+
+  const modeEl = document.getElementById('netModeSelect');
+  if (modeEl.value === 'time') {
+    net.maxKills = 0;
+    net.timeLimit = parseInt(document.getElementById('netTimeSelect').value);
+  } else {
+    net.maxKills = parseInt(document.getElementById('netKillsSelect').value);
+    net.timeLimit = 0;
+  }
 
   setNetStatus('СОЗДАНИЕ КОМНАТЫ...', 'wait');
   
@@ -2067,7 +2341,20 @@ function joinRoom() {
   net.isHost = false;
   net.hostScore = 0;
   net.guestScore = 0;
+  net.hostDeaths = 0;
+  net.guestDeaths = 0;
   gameWinner = null;
+  net.gameStartTime = performance.now();
+  
+  const modeEl = document.getElementById('netModeSelect');
+  if (modeEl.value === 'time') {
+    net.maxKills = 0;
+    net.timeLimit = parseInt(document.getElementById('netTimeSelect').value);
+  } else {
+    net.maxKills = parseInt(document.getElementById('netKillsSelect').value);
+    net.timeLimit = 0;
+  }
+
   setNetStatus('ПОДКЛЮЧЕНИЕ...', 'wait');
 
   net.peer = new Peer(null, {
@@ -2106,7 +2393,7 @@ function handlePeerData(data) {
       net.otherName = data.name;
       const guestSpawnX = 0;
       const guestSpawnZ = -25;
-      net.conn.send({ t:'start', name: net.myName, spawnX: guestSpawnX, spawnZ: guestSpawnZ, hScore: net.hostScore, gScore: net.guestScore });
+      net.conn.send({ t:'start', name: net.myName, spawnX: guestSpawnX, spawnZ: guestSpawnZ, hScore: net.hostScore, gScore: net.guestScore, maxKills: net.maxKills, timeLimit: net.timeLimit });
       enterOnlineGame(0, 25, guestSpawnX, guestSpawnZ);
     }
   }
@@ -2115,6 +2402,8 @@ function handlePeerData(data) {
       net.otherName = data.name;
       net.hostScore = data.hScore;
       net.guestScore = data.gScore;
+      if (data.maxKills !== undefined) net.maxKills = data.maxKills;
+      if (data.timeLimit !== undefined) net.timeLimit = data.timeLimit;
       enterOnlineGame(data.spawnX, data.spawnZ, 0, 25);
     }
   }
@@ -2126,7 +2415,8 @@ function handlePeerData(data) {
       net.guestInput.pitch = data.pitch;
       net.guestInput.fire = data.fire;
       net.guestInput.weapon = data.weapon;
-      net.guestInput.reload = data.reload; 
+      net.guestInput.reload = data.reload;
+      net.guestInput.crouch = data.crouch;
     }
   }
   else if (data.t === 'state') {
@@ -2139,7 +2429,8 @@ function handlePeerData(data) {
     if (net.isHost) {
       net.hostHp -= data.dmg;
       if (net.hostHp < 0) net.hostHp = 0;
-      hpEl.textContent = net.hostHp;
+      player.hp = net.hostHp;
+      updateHpUI();
       dmgFlash.style.opacity = '0.8';
       setTimeout(() => dmgFlash.style.opacity = '0', 100);
       addKillfeed(`${net.otherName} → ${net.myName}`, data.head ? '#ff4444' : '#ffaa44');
@@ -2150,6 +2441,7 @@ function handlePeerData(data) {
       if (net.hostHp <= 0) {
         net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
         net.guestScore++;
+        net.hostDeaths++;
         updateScoreboard();
         checkWinCondition();
         if (!gameWinner) respawnPlayer();
@@ -2157,7 +2449,8 @@ function handlePeerData(data) {
     } else {
       net.guestHp -= data.dmg;
       if (net.guestHp < 0) net.guestHp = 0;
-      hpEl.textContent = net.guestHp;
+      player.hp = net.guestHp;
+      updateHpUI();
       dmgFlash.style.opacity = '0.8';
       setTimeout(() => dmgFlash.style.opacity = '0', 100);
       addKillfeed(`${net.otherName} → ${net.myName}`, data.head ? '#ff4444' : '#ffaa44');
@@ -2168,6 +2461,7 @@ function handlePeerData(data) {
       if (net.guestHp <= 0) {
         net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
         net.hostScore++;
+        net.guestDeaths++;
         updateScoreboard();
         checkWinCondition();
         if (!gameWinner) respawnPlayer();
@@ -2177,9 +2471,9 @@ function handlePeerData(data) {
   else if (data.t === 'hp') {
     net.hostHp = data.host;
     net.guestHp = data.guest;
-    if (net.isHost) otherHp.textContent = data.guest;
-    else otherHp.textContent = data.host;
-    hpEl.textContent = net.isHost ? net.hostHp : net.guestHp;
+    if (net.isHost) { otherHp.textContent = data.guest; player.hp = data.host; }
+    else { otherHp.textContent = data.host; player.hp = data.guest; }
+    updateHpUI();
   }
   else if (data.t === 'kill') {
     if (data.victim === net.myName) {
@@ -2189,12 +2483,16 @@ function handlePeerData(data) {
 }
 
 function respawnPlayer() {
+  if (gameWinner) return;
+
   net.hostHp = 100;
   net.guestHp = 100;
   player.hp = 100; player.alive = true;
   player.pos.set(net.isHost ? 0 : 0, 0, net.isHost ? 25 : -25);
   player.ammo.rifle = 30;
   player.ammo.shotgun = 8;
+  player.ammo.sniper = 5;
+  updateHpUI();
   updateAmmoUI();
   
   if (net.isHost) {
@@ -2216,9 +2514,10 @@ function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
   player.hp = 100; player.alive = true; player.onGround = true;
   player.weapon = 'rifle'; player.grenades = 3;
-  player.ammo = { rifle: 30, shotgun: 8 };
+  player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
   updateWeaponVisual();
   updateAmmoUI();
+  updateHpUI();
   
   remotePlayer.group.position.set(otherSpawnX, 0, otherSpawnZ);
   remotePlayer.group.rotation.y = 0;
@@ -2238,7 +2537,6 @@ function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
   netBadge.style.display = 'block';
   otherName.textContent = net.otherName;
   otherHp.textContent = 100;
-  hpEl.textContent = 100;
   updateScoreboard();
 
   clock.getDelta();
@@ -2267,6 +2565,17 @@ tabs.forEach(tab => {
 document.getElementById('sensInput').addEventListener('input', e => { document.getElementById('sensVal').textContent = e.target.value; });
 document.getElementById('opacityInput').addEventListener('input', e => { document.getElementById('opacityVal').textContent = e.target.value; });
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+
+// UI Lobby switcher
+document.getElementById('netModeSelect').addEventListener('change', (e) => {
+  if (e.target.value === 'time') {
+    document.getElementById('netKillsDiv').style.display = 'none';
+    document.getElementById('netTimeDiv').style.display = 'block';
+  } else {
+    document.getElementById('netKillsDiv').style.display = 'block';
+    document.getElementById('netTimeDiv').style.display = 'none';
+  }
+});
 
 function setNetStatus(text, cls) {
   const el = document.getElementById('netStatus');
@@ -2356,12 +2665,17 @@ function startSoloGame() {
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
   player.hp = 100; player.alive = true; player.onGround = true;
   player.weapon = 'rifle'; player.grenades = 3;
-  player.ammo = { rifle: 30, shotgun: 8 };
+  player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
   updateWeaponVisual();
   updateAmmoUI();
+  updateHpUI();
   grenadeBtn.classList.remove('active');
+  sniperBtn.classList.remove('active');
+  crouchBtn.classList.remove('active');
+  player.isCrouching = false;
+  player.isScoped = false;
+  scopeOverlay.classList.remove('show');
   
-  hpEl.textContent = 100;
   input.fire = false; input.moveX = 0; input.moveY = 0;
   clock.getDelta();
 }
@@ -2372,6 +2686,7 @@ function exitToMenu() {
   document.body.classList.remove('ingame-online');
   menuEl.classList.remove('hidden');
   document.getElementById('deathOverlay').classList.remove('show');
+  document.getElementById('winOverlay').style.display = 'none';
   mode = MODE.MENU;
 
   if (net.peer) { try { net.peer.destroy(); } catch(e){} net.peer = null; }
@@ -2383,6 +2698,11 @@ function exitToMenu() {
   remotePlayer.group.visible = false;
   bot.group.visible = false;
   grenadeBtn.classList.remove('active');
+  sniperBtn.classList.remove('active');
+  crouchBtn.classList.remove('active');
+  player.isCrouching = false;
+  player.isScoped = false;
+  scopeOverlay.classList.remove('show');
 
   document.getElementById('voiceToggleBtn').style.display = 'block';
   document.getElementById('voiceToggleBtnGuest').style.display = 'block';
@@ -2400,6 +2720,11 @@ document.getElementById('deathMenu').addEventListener('click', () => {
     exitToMenu();
   }
 });
+document.getElementById('winRestart').addEventListener('click', () => {
+  exitToMenu();
+  // Тут нужно заново открыть модалку или начать соло. Проще в лобби.
+});
+document.getElementById('winMenu').addEventListener('click', exitToMenu);
 
 /* ========== СЕТЕВОЙ ТИК ========== */
 let netTickInterval = null;
@@ -2408,6 +2733,10 @@ function startNetTick() {
   if (net.isHost) {
     netTickInterval = setInterval(() => {
       if (!net.connected || mode !== MODE.PLAY_ONLINE) return;
+      
+      // Проверка на победу по времени
+      checkWinCondition();
+
       const guestState = {
         pos: remotePlayer.group.position,
         vy: remotePlayer._vy || 0,
@@ -2416,7 +2745,7 @@ function startNetTick() {
         onGround: remotePlayer._onGround !== false,
         coyoteTimer: 0,
       };
-      stepPlayerPhysics(guestState, net.guestInput, TICK_MS / 1000);
+      stepPlayerPhysics(guestState, net.guestInput, TICK_MS / 1000, net.guestInput.crouch);
       remotePlayer._vy = guestState.vy;
       remotePlayer._onGround = guestState.onGround;
       remotePlayer.group.rotation.y = guestState.yaw;
@@ -2444,11 +2773,15 @@ function startNetTick() {
   } else {
     netTickInterval = setInterval(() => {
       if (!net.connected || mode !== MODE.PLAY_ONLINE) return;
+      
+      // Проверка на победу по времени (чтобы гость тоже видел результат)
+      checkWinCondition();
+
       net.conn.send({
         t: 'input',
         mx: input.moveX, my: input.moveY,
         yaw: player.yaw, pitch: player.pitch, fire: input.fire,
-        weapon: player.weapon, reload: player.isReloading,
+        weapon: player.weapon, reload: player.isReloading, crouch: player.isCrouching,
       });
       const snap = net.lastSnapshot;
       if (!snap) return;
@@ -2467,6 +2800,9 @@ function stopNetTick() { if (netTickInterval) { clearInterval(netTickInterval); 
 /* ============================================================
    ГЛАВНЫЙ ЦИКЛ
    ============================================================ */
+let mediaRecorder = null;
+let recordedChunks = [];
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -2480,8 +2816,19 @@ function animate() {
     camera.lookAt(menuCam.centerX, menuCam.height + menuCam.pitch, menuCam.centerZ);
   } else {
     if (player.alive) {
-      stepPlayerPhysics(player, input, dt);
+      stepPlayerPhysics(player, input, dt, player.isCrouching);
       if (input.fire) tryShoot();
+      
+      // Шаги
+      if ((input.moveX !== 0 || input.moveY !== 0) && player.onGround) {
+        player.stepTimer += dt;
+        if (player.stepTimer > (player.isCrouching ? 0.5 : 0.35)) {
+          sounds.step((Math.random()-0.5)*2, 0.3);
+          player.stepTimer = 0;
+        }
+      } else {
+        player.stepTimer = 0;
+      }
     }
     
     if (mode === MODE.PLAY_SOLO) updateBot(dt, now);
@@ -2489,11 +2836,12 @@ function animate() {
     updateGrenades(dt, now);
     updateBlood(dt, now);
 
-    const camY = player.pos.y + PLAYER_HEIGHT;
+    const currentHeight = player.isCrouching ? CROUCH_HEIGHT : PLAYER_HEIGHT;
+    const camY = player.pos.y + currentHeight;
     camera.position.set(player.pos.x, camY, player.pos.z);
     
-    if (player.weapon !== 'grenade') {
-      const model = player.weapon === 'rifle' ? weaponModels.rifle : weaponModels.shotgun;
+    if (player.weapon !== 'grenade' && !player.isScoped) {
+      const model = player.weapon === 'rifle' ? weaponModels.rifle : player.weapon === 'shotgun' ? weaponModels.shotgun : weaponModels.sniper;
       if (model) {
         model.position.x += Math.sin(now * 0.005) * 0.001;
         model.position.y += Math.cos(now * 0.004) * 0.001;
@@ -2512,6 +2860,36 @@ function animate() {
       player.isReloading = false;
       player.ammo[player.weapon] = WEAPON_STATS[player.weapon].magSize;
       updateAmmoUI();
+    }
+
+    // Обновляем HP бар над врагом
+    if (mode === MODE.PLAY_SOLO && bot.alive) {
+      const bPos = bot.group.position.clone();
+      bPos.y += 2.5;
+      bPos.project(camera);
+      if (bPos.z < 1) {
+        enemyHpBar.style.left = (bPos.x * 0.5 + 0.5) * window.innerWidth + 'px';
+        enemyHpBar.style.top = (-bPos.y * 0.5 + 0.5) * window.innerHeight + 'px';
+        enemyHpBar.classList.add('show');
+        enemyHpFill.style.width = (bot.hp / bot.maxHp * 100) + '%';
+      } else {
+        enemyHpBar.classList.remove('show');
+      }
+    } else if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible) {
+      const rPos = remotePlayer.group.position.clone();
+      rPos.y += 2.5;
+      rPos.project(camera);
+      if (rPos.z < 1) {
+        enemyHpBar.style.left = (rPos.x * 0.5 + 0.5) * window.innerWidth + 'px';
+        enemyHpBar.style.top = (-rPos.y * 0.5 + 0.5) * window.innerHeight + 'px';
+        enemyHpBar.classList.add('show');
+        const ehp = net.isHost ? net.guestHp : net.hostHp;
+        enemyHpFill.style.width = Math.max(0, ehp) + '%';
+      } else {
+        enemyHpBar.classList.remove('show');
+      }
+    } else {
+      enemyHpBar.classList.remove('show');
     }
 
     for (let i = tracers.length-1; i >= 0; i--) {
@@ -2545,6 +2923,10 @@ addEventListener('keydown', e => {
   if (e.key === ' ') input.fire = true;
   if (e.key === 'Shift') tryJump(player);
   if (e.key === 'r' || e.key === 'R') startReload();
+  if (e.key === 'c' || e.key === 'C') {
+    player.isCrouching = !player.isCrouching;
+    crouchBtn.classList.toggle('active', player.isCrouching);
+  }
   if (e.key === 'q' || e.key === 'Q') {
     if (player.weapon === 'grenade') { player.weapon = 'rifle'; grenadeBtn.classList.remove('active'); }
     else { player.weapon = player.weapon === 'rifle' ? 'shotgun' : 'rifle'; }
@@ -2567,7 +2949,7 @@ addEventListener('keyup', e => {
 });
 addEventListener('mousedown', e => {
   if (mode === MODE.MENU) return;
-  if (e.target.closest('#fire, #jump, #exitBtn, #deathOverlay, #netModal, #swapBtn, #grenadeBtn, #reloadBtn')) return;
+  if (e.target.closest('#fire, #jump, #exitBtn, #deathOverlay, #netModal, #swapBtn, #grenadeBtn, #reloadBtn, #crouchBtn, #sniperBtn, #pttBtn')) return;
   mouseDown = true;
 });
 addEventListener('mouseup', () => mouseDown = false);
@@ -2579,10 +2961,46 @@ addEventListener('mousemove', e => {
   player.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, player.pitch));
 });
 
+/* Запись экрана */
+document.getElementById('recordBtn').addEventListener('click', async () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    document.getElementById('recordBtn').textContent = '🔴 ЗАПИСЬ ЭКРАНА';
+    document.getElementById('recordBtn').style.color = '#ff8888';
+    return;
+  }
+  
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    recordedChunks = [];
+    
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
+    };
+    
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'zaharka_gameplay.webm';
+      a.click();
+      stream.getTracks().forEach(t => t.stop());
+    };
+    
+    mediaRecorder.start();
+    document.getElementById('recordBtn').textContent = '⏹ ОСТАНОВИТЬ ЗАПИСЬ';
+    document.getElementById('recordBtn').style.color = '#ff3333';
+  } catch (err) {
+    alert('Не удалось начать запись: ' + err.message);
+  }
+});
+
 initScene();
 applySettingsToUI();
 buildNavGrid();
 animate();
 </script>
 </body>
- </html>
+</html>
