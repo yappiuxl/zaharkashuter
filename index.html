@@ -459,7 +459,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 1.1 · P2P<br>
+      ВЕРСИЯ 1.2 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -1293,8 +1293,8 @@ function tryShoot() {
   if (first.object.userData.part) {
     const isHead = first.object.userData.part === 'head';
     let dmg = 0;
-    // АВТОМАТ ОСЛАБЛЕН, ДРОБОВИК МОЩНЫЙ
-    if (player.weapon === 'rifle') dmg = isHead ? 50 : 15;
+    // АВТОМАТ ОСЛАБЛЕН В 4 РАЗА (12 тело, 20 голова), ДРОБОВИК МОЩНЫЙ (40 тело, 100 голова)
+    if (player.weapon === 'rifle') dmg = isHead ? 20 : 12;
     else if (player.weapon === 'shotgun') dmg = isHead ? 100 : 40;
 
     spawnBlood(first.point);
@@ -1356,7 +1356,24 @@ function updateGrenades(dt, now) {
 
     if (!ud.exploded) {
       ud.vel.y -= 20 * dt;
-      g.position.add(ud.vel.clone().multiplyScalar(dt));
+      
+      // Проверка на столкновение с коллайдерами по X и Z
+      const nextX = g.position.x + ud.vel.x * dt;
+      const nextZ = g.position.z + ud.vel.z * dt;
+      
+      if (canExistAt(nextX, g.position.z, g.position.y, 0.15)) {
+        g.position.x = nextX;
+      } else {
+        ud.vel.x *= -0.5;
+      }
+      
+      if (canExistAt(g.position.x, nextZ, g.position.y, 0.15)) {
+        g.position.z = nextZ;
+      } else {
+        ud.vel.z *= -0.5;
+      }
+
+      g.position.y += ud.vel.y * dt;
 
       const gy = groundHeightAt(g.position.x, g.position.z, g.position.y, 0.15);
       if (g.position.y < gy + 0.15) {
@@ -1365,8 +1382,6 @@ function updateGrenades(dt, now) {
         ud.vel.x *= 0.7;
         ud.vel.z *= 0.7;
       }
-      if (Math.abs(g.position.x) > FLOOR) ud.vel.x *= -0.5;
-      if (Math.abs(g.position.z) > FLOOR) ud.vel.z *= -0.5;
 
       if (now - ud.born > 2000) {
         ud.exploded = true;
@@ -1381,7 +1396,7 @@ function updateGrenades(dt, now) {
         scene.remove(g);
         grenades.splice(i, 1);
 
-        const explodeDist = 15; // ЕЩЕ БОЛЬШЕ РАДИУС
+        const explodeDist = 15;
         // Урон игроку
         if (player.alive) {
           const dist = player.pos.distanceTo(g.position);
@@ -1512,7 +1527,6 @@ function updateBot(dt, now) {
   const playerEyeY = player.pos.y + PLAYER_HEIGHT;
   const botEyeY = 1.6;
 
-  // Реакция на выстрелы игрока (слышит)
   if (input.fire && now - bot.heardTime > 500 && dist < BOT_HEARING_DIST) {
     bot.heardTime = now;
     bot.lastSeenX = player.pos.x;
@@ -1535,7 +1549,6 @@ function updateBot(dt, now) {
     bot.lastSeenTime = now;
   }
   
-  // Регенерация
   if (now - bot.lastDamaged > BOT_REGEN_DELAY) {
     bot.hp = Math.min(BOT_HP, bot.hp + BOT_HP_REGEN * dt);
   }
@@ -1553,7 +1566,6 @@ function updateBot(dt, now) {
   if (bot.state === BOT_STATE.ATTACK) {
     turnTowards(bot, Math.atan2(dx, dz), dt, 14);
     
-    // Постоянный стрейф
     if (now > bot.strafeUntil) {
       bot.strafeDir = Math.random() < 0.5 ? 1 : -1;
       bot.strafeUntil = now + BOT_STRAFE_INTERVAL + Math.random() * 400;
