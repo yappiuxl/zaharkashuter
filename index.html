@@ -300,13 +300,6 @@
   body.ingame-online #scoreboard { display:block; }
   body.ingame-online #otherHud { display:block; }
 
-  /* Применяем настройки масштаба к кнопкам */
-  #fire, #jump, #swapBtn, #grenadeBtn, #reloadBtn {
-    transform: scale(var(--btn-scale));
-    transform-origin: bottom right;
-    opacity: var(--btn-opacity);
-  }
-
   #fire {
     position:fixed; right:45px; bottom:180px; width:110px; height:110px;
     border-radius:50%; background:rgba(255,60,60,0.35);
@@ -314,6 +307,8 @@
     color:#fff; font:bold 20px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(255,60,60,0.3);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right;
+    opacity: var(--btn-opacity);
   }
   #fire:active { background:rgba(255,120,120,0.7); transform:scale(calc(var(--btn-scale) * 0.95)); }
   
@@ -324,6 +319,8 @@
     color:#fff; font:bold 18px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(80,180,255,0.3);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right;
+    opacity: var(--btn-opacity);
   }
   #jump:active { background:rgba(120,200,255,0.65); transform:scale(calc(var(--btn-scale) * 0.95)); }
 
@@ -334,6 +331,8 @@
     color:#fff; font:bold 14px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(255,255,80,0.3);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right;
+    opacity: var(--btn-opacity);
   }
   #swapBtn:active { background:rgba(255,255,120,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
 
@@ -344,17 +343,21 @@
     color:#fff; font:bold 14px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(80,200,80,0.3);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right;
+    opacity: var(--btn-opacity);
   }
   #grenadeBtn:active { background:rgba(120,255,120,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
   #grenadeBtn.active { background:rgba(255,200,50,0.8); border-color: #fff; }
 
   #reloadBtn {
-    position:fixed; right:165px; bottom:245px; width:80px; height:80px;
+    position:fixed; right:255px; bottom:55px; width:80px; height:80px;
     border-radius:50%; background:rgba(180,180,180,0.3);
     border:3px solid rgba(220,220,220,0.85); z-index:11;
     color:#fff; font:bold 14px sans-serif;
     align-items:center; justify-content:center; touch-action:none;
     box-shadow:0 0 20px rgba(180,180,180,0.3);
+    transform: scale(var(--btn-scale)); transform-origin: bottom right;
+    opacity: var(--btn-opacity);
   }
   #reloadBtn:active { background:rgba(220,220,220,0.6); transform:scale(calc(var(--btn-scale) * 0.95)); }
 
@@ -379,14 +382,15 @@
     background: rgba(0,0,0,0.7);
     border-radius: 10px;
     color: #fff;
-    font: bold 18px monospace;
+    font: bold 16px monospace;
     z-index: 11;
     text-align: center;
     border: 1px solid rgba(255,136,68,0.5);
+    white-space: nowrap;
   }
 
   #netBadge {
-    position:fixed; top:15px; left:50%; transform:translateX(-50%);
+    position:fixed; top:60px; left:50%; transform:translateX(-50%);
     padding: 6px 16px;
     background: rgba(0,0,0,0.6);
     border-radius: 20px;
@@ -414,7 +418,7 @@
   #otherHud .otherHp { color:#ff5555; }
 
   #killfeed {
-    position:fixed; top: 80px; right: 15px;
+    position:fixed; top: 100px; right: 15px;
     flex-direction: column;
     gap: 4px;
     z-index: 10;
@@ -469,9 +473,10 @@
   #deathOverlay h2 {
     font-size:40px; font-weight:900; color:#ff3333;
     letter-spacing:4px; text-shadow: 0 0 30px rgba(255,50,50,0.8);
+    text-transform: uppercase;
   }
-  #deathOverlay .stats { font-size:18px; color:#aaa; }
-  #deathOverlay .stats b { color:#0f0; }
+  #deathOverlay .stats { font-size:24px; color:#aaa; text-align:center; }
+  #deathOverlay .stats b { color:#0f0; font-size:32px; }
   #deathOverlay button {
     padding:14px 40px; margin-top:10px;
     background: linear-gradient(135deg, #ff8844, #ff5522);
@@ -642,7 +647,7 @@
 
 <div id="deathOverlay">
   <h2>ТЫ СДОХ</h2>
-  <div class="stats">Убит: <b id="deathKiller">-</b></div>
+  <div class="stats" id="deathStats">Убит: <b id="deathKiller">-</b></div>
   <button id="deathMenu">В МЕНЮ</button>
 </div>
 
@@ -664,7 +669,7 @@ const PEER_PATH = '/';
 const PEER_SECURE = true;
 
 /* ============================================================
-   НАСТРОЙКИ ИГРОКА (Сохраняются в localStorage)
+   НАСТРОЙКИ ИГРОКА
    ============================================================ */
 const userSettings = {
   sensitivity: parseFloat(localStorage.getItem('zs_sens')) || 1.0,
@@ -678,7 +683,6 @@ let LOOK_SENS = LOOK_SENS_BASE * userSettings.sensitivity;
 function applySettingsToUI() {
   document.documentElement.style.setProperty('--btn-scale', userSettings.btnScale / 100);
   document.documentElement.style.setProperty('--btn-opacity', userSettings.btnOpacity / 100);
-  
   LOOK_SENS = LOOK_SENS_BASE * userSettings.sensitivity;
   
   document.getElementById('sensVal').textContent = userSettings.sensitivity.toFixed(1);
@@ -708,7 +712,7 @@ function saveSettings() {
    ============================================================ */
 const MODE = { MENU: 0, PLAY_SOLO: 1, PLAY_ONLINE: 2 };
 let mode = MODE.MENU;
-let gameWinner = null; // null | 'host' | 'guest'
+let gameWinner = null; 
 
 let scene, camera, renderer, clock;
 let colliders = [], tracers = [], grenades = [], bloodParticles = [];
@@ -752,13 +756,12 @@ const PLAYER_RADIUS = 0.4;
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 
-// Оружие
 const WEAPON_STATS = {
   rifle: { magSize: 30, reloadTime: 2000, damageBody: 20, damageHead: 100, fireRate: 110 },
   shotgun: { magSize: 8, reloadTime: 2500, damageBody: 40, damageHead: 100, fireRate: 800 }
 };
 
-// Бот (AI)
+// Бот
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3, REPOSITION:4, FLEE:5, PEEK:6 };
 const BOT_SIGHT_DIST = 65, BOT_ATTACK_DIST = 25, BOT_FOV = Math.PI * 0.85;
 const BOT_HEARING_DIST = 70, BOT_SPEED = 4.6, BOT_SPEED_FLEE = 6.5, BOT_SPEED_STRAFE = 5.5;
@@ -957,7 +960,6 @@ function initScene() {
   });
 }
 
-/* ========== МОДЕЛИ ОРУЖИЯ ========== */
 function createWeaponModel(type) {
   const g = new THREE.Group();
   const gunMat = new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.5, metalness:0.6 });
@@ -989,7 +991,6 @@ function createWeaponModel(type) {
   return g;
 }
 
-/* ========== УДАЛЁННЫЙ ИГРОК ========== */
 function createRemotePlayerModel() {
   const g = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({ color:0x4488dd, roughness:0.6, emissive:0x112244 });
@@ -1012,7 +1013,6 @@ function createRemotePlayerModel() {
   return { group:g, hitHead, hitBody };
 }
 
-/* ========== БОТ ========== */
 function createBot(x, z) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
@@ -1261,7 +1261,6 @@ swapBtn.addEventListener('touchstart', e => {
   }
 }, { passive:false });
 
-const grenadeBtn = document.getElementById('grenadeBtn');
 grenadeBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
   if (mode !== MODE.MENU && player.alive && !player.isReloading) {
@@ -1614,7 +1613,7 @@ function addKillfeed(text, color='#fff') {
 }
 
 /* ============================================================
-   ЛОГИКА БОТА (Одиночная игра)
+   ЛОГИКА БОТА
    ============================================================ */
 function updateBot(dt, now) {
   if (!bot.alive) {
@@ -1769,6 +1768,104 @@ function hasLineOfSight(fromX, fromZ, toX, toZ, fromY = 1.6, toY = 1.6) {
   return true;
 }
 
+/* ========== NAV MESH ========== */
+let NAV_CELL, NAV_SIZE, NAV_OFFSET, NAV_RADIUS;
+let navGrid;
+function buildNavGrid() {
+  NAV_CELL = 1.5; NAV_SIZE = Math.ceil(FLOOR*2 / NAV_CELL); NAV_OFFSET = FLOOR; NAV_RADIUS = 0.6;
+  navGrid = new Uint8Array(NAV_SIZE * NAV_SIZE);
+  const testBox = new THREE.Box3();
+  const min = new THREE.Vector3(), max = new THREE.Vector3();
+  for (let gy = 0; gy < NAV_SIZE; gy++) {
+    for (let gx = 0; gx < NAV_SIZE; gx++) {
+      const wx = gx * NAV_CELL - NAV_OFFSET + NAV_CELL/2;
+      const wz = gy * NAV_CELL - NAV_OFFSET + NAV_CELL/2;
+      min.set(wx - NAV_RADIUS, 0, wz - NAV_RADIUS);
+      max.set(wx + NAV_RADIUS, 2, wz + NAV_RADIUS);
+      testBox.min.copy(min); testBox.max.copy(max);
+      let blocked = 0;
+      for (let i = 0; i < colliders.length; i++) {
+        if (testBox.intersectsBox(colliders[i].box)) { blocked = 1; break; }
+      }
+      navGrid[gy * NAV_SIZE + gx] = blocked;
+    }
+  }
+}
+function worldToGrid(wx, wz) { return { gx: Math.floor((wx + NAV_OFFSET) / NAV_CELL), gy: Math.floor((wz + NAV_OFFSET) / NAV_CELL) }; }
+function gridToWorld(gx, gy) { return { x: gx * NAV_CELL - NAV_OFFSET + NAV_CELL/2, z: gy * NAV_CELL - NAV_OFFSET + NAV_CELL/2 }; }
+function isWalkable(gx, gy) {
+  if (gx < 0 || gy < 0 || gx >= NAV_SIZE || gy >= NAV_SIZE) return false;
+  return navGrid[gy * NAV_SIZE + gx] === 0;
+}
+class MinHeap {
+  constructor() { this.a = []; }
+  push(node) {
+    this.a.push(node); let i = this.a.length - 1;
+    while (i > 0) {
+      const p = (i-1) >> 1; if (this.a[p].f <= this.a[i].f) break;
+      [this.a[p], this.a[i]] = [this.a[i], this.a[p]]; i = p;
+    }
+  }
+  pop() {
+    const top = this.a[0]; const last = this.a.pop();
+    if (this.a.length) {
+      this.a[0] = last; let i = 0; const n = this.a.length;
+      while (true) {
+        const l = 2*i+1, r = 2*i+2; let s = i;
+        if (l < n && this.a[l].f < this.a[s].f) s = l;
+        if (r < n && this.a[r].f < this.a[s].f) s = r;
+        if (s === i) break;
+        [this.a[s], this.a[i]] = [this.a[i], this.a[s]]; i = s;
+      }
+    }
+    return top;
+  }
+  get size() { return this.a.length; }
+}
+const _gScores = new Float32Array(80*80);
+const _cameFrom = new Int32Array(80*80);
+function heuristic(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by) * NAV_CELL; }
+function findPath(sx, sz, ex, ez) {
+  const s = worldToGrid(sx, sz); const e = worldToGrid(ex, ez);
+  if (!isWalkable(s.gx, s.gy) || !isWalkable(e.gx, e.gy)) return null;
+  _gScores.fill(Infinity); _cameFrom.fill(-1);
+  const startIdx = s.gy * NAV_SIZE + s.gx; const endIdx = e.gy * NAV_SIZE + e.gx;
+  if (startIdx === endIdx) return [{ x: ex, z: ez }];
+  const open = new MinHeap(); const inOpen = new Uint8Array(NAV_SIZE * NAV_SIZE);
+  _gScores[startIdx] = 0;
+  open.push({ idx: startIdx, gx: s.gx, gy: s.gy, f: heuristic(s.gx, s.gy, e.gx, e.gy) });
+  inOpen[startIdx] = 1;
+  const dirs = [[ 1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [ 1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
+  while (open.size) {
+    const cur = open.pop();
+    if (cur.idx === endIdx) {
+      const path = []; let c = endIdx;
+      while (c !== -1 && c !== startIdx) {
+        const gx = c % NAV_SIZE; const gy = (c / NAV_SIZE) | 0;
+        path.push(gridToWorld(gx, gy)); c = _cameFrom[c];
+      }
+      path.reverse(); if (path.length) path[path.length - 1] = { x: ex, z: ez };
+      return path;
+    }
+    inOpen[cur.idx] = 0;
+    for (let d = 0; d < dirs.length; d++) {
+      const dx = dirs[d][0], dy = dirs[d][1], cost = dirs[d][2];
+      const nx = cur.gx + dx, ny = cur.gy + dy;
+      if (!isWalkable(nx, ny)) continue;
+      if (dx !== 0 && dy !== 0 && (!isWalkable(cur.gx + dx, cur.gy) || !isWalkable(cur.gx, cur.gy + dy))) continue;
+      const nIdx = ny * NAV_SIZE + nx; const tentative = _gScores[cur.idx] + cost * NAV_CELL;
+      if (tentative < _gScores[nIdx]) {
+        _gScores[nIdx] = tentative; _cameFrom[nIdx] = cur.idx;
+        if (!inOpen[nIdx]) {
+          open.push({ idx: nIdx, gx: nx, gy: ny, f: tentative + heuristic(nx, ny, e.gx, e.gy) });
+          inOpen[nIdx] = 1;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /* ============================================================
    СЕТЕВЫЕ ПЕРЕХОДЫ
    ============================================================ */
@@ -1888,7 +1985,7 @@ function handlePeerData(data) {
       net.guestInput.pitch = data.pitch;
       net.guestInput.fire = data.fire;
       net.guestInput.weapon = data.weapon;
-      net.guestInput.reload = data.reload; // Синхронизация перезарядки
+      net.guestInput.reload = data.reload; 
     }
   }
   else if (data.t === 'state') {
@@ -1951,7 +2048,6 @@ function handlePeerData(data) {
 }
 
 function respawnPlayer() {
-  // Просто респавним игроков, если не дошли до 10 киллов
   net.hostHp = 100;
   net.guestHp = 100;
   player.hp = 100; player.alive = true;
@@ -2157,8 +2253,8 @@ document.getElementById('playBtn').addEventListener('click', startSoloGame);
 document.getElementById('exitBtn').addEventListener('click', exitToMenu);
 document.getElementById('deathMenu').addEventListener('click', () => {
   if (mode === MODE.PLAY_ONLINE) {
-    if (gameWinner) respawnPlayer(); // Сброс матча
-    else respawnPlayer(); // Обычный респавн
+    if (gameWinner) respawnPlayer(); 
+    else respawnPlayer(); 
     document.getElementById('deathOverlay').classList.remove('show');
   } else {
     exitToMenu();
@@ -2272,7 +2368,6 @@ function animate() {
     );
     camera.lookAt(camera.position.clone().add(lookDir));
 
-    // Проверка перезарядки
     if (player.isReloading && now >= player.reloadEndTime) {
       player.isReloading = false;
       player.ammo[player.weapon] = WEAPON_STATS[player.weapon].magSize;
