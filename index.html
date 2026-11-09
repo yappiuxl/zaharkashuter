@@ -265,8 +265,10 @@
   #leftHalf, #rightHalf, #stickL, #fire, #jump, #hud, #crosshair, #netBadge, #otherHud, #exitBtn, #killfeed, #swapBtn, #grenadeBtn, #scoreboard { display:none; }
   body.ingame #leftHalf, body.ingame #rightHalf { display:block; }
   body.ingame #stickL, body.ingame #fire, body.ingame #jump, body.ingame #swapBtn, body.ingame #grenadeBtn { display:flex; }
-  body.ingame #hud, body.ingame #crosshair, body.ingame #netBadge, body.ingame #otherHud, body.ingame #exitBtn, body.ingame #scoreboard { display:block; }
+  body.ingame #hud, body.ingame #crosshair, body.ingame #netBadge, body.ingame #exitBtn { display:block; }
   body.ingame #killfeed { display:flex; }
+  body.ingame-online #scoreboard { display:block; }
+  body.ingame-online #otherHud { display:block; }
 
   #fire {
     position:fixed; right:45px; bottom:180px; width:110px; height:110px;
@@ -316,14 +318,15 @@
   #hp    { color:#ff5555; }
 
   #scoreboard {
-    position:fixed; top:15px; right:15px;
-    padding: 8px 16px;
-    background: rgba(0,0,0,0.6);
+    position:fixed; top:15px; left:50%; transform:translateX(-50%);
+    padding: 8px 20px;
+    background: rgba(0,0,0,0.7);
     border-radius: 10px;
-    color: #ff8844;
-    font: bold 16px monospace;
-    z-index: 10;
-    text-align: right;
+    color: #fff;
+    font: bold 18px monospace;
+    z-index: 11;
+    text-align: center;
+    border: 1px solid rgba(255,136,68,0.5);
   }
 
   #netBadge {
@@ -340,7 +343,7 @@
   #netBadge.host { color:#ffaa44; border-color:rgba(255,170,68,0.4); }
 
   #otherHud {
-    position:fixed; top:15px; right:200px;
+    position:fixed; top:15px; right:150px;
     padding: 8px 16px;
     background: rgba(0,0,0,0.6);
     border-radius: 10px;
@@ -452,7 +455,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 0.8 · P2P<br>
+      ВЕРСИЯ 0.9 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -585,49 +588,15 @@ const PEER_PATH = '/';
 const PEER_SECURE = true;
 
 /* ============================================================
-   РЕЖИМЫ
+   РЕЖИМЫ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
    ============================================================ */
-const MODE = { MENU: 0, PLAY: 1 };
+const MODE = { MENU: 0, PLAY_SOLO: 1, PLAY_ONLINE: 2 };
 let mode = MODE.MENU;
 
-/* ============================================================
-   ТАБЫ
-   ============================================================ */
-const menuEl = document.getElementById('menu');
-const tabs = document.querySelectorAll('.tab');
-const panels = {
-  inventory: document.getElementById('panel-inventory'),
-  play:      document.getElementById('panel-play'),
-  shop:      document.getElementById('panel-shop'),
-};
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    const name = tab.dataset.tab;
-    tabs.forEach(t => t.classList.toggle('active', t === tab));
-    Object.keys(panels).forEach(k => panels[k].classList.toggle('active', k === name));
-  });
-});
-
-/* ============================================================
-   КОНСТАНТЫ
-   ============================================================ */
-const FLOOR = 60;
-const PLAYER_HEIGHT = 1.6;
-const GRAVITY = -22;
-const JUMP_VELOCITY = 8.0;
-const PLAYER_SPEED = 8;
-const PLAYER_RADIUS = 0.4;
-
-const TICK_RATE = 30;
-const TICK_MS = 1000 / TICK_RATE;
-
-/* ============================================================
-   THREE.JS СЦЕНА
-   ============================================================ */
 let scene, camera, renderer, clock;
-let colliders = [], tracers = [];
+let colliders = [], tracers = [], grenades = [], bloodParticles = [];
 let raycaster;
-let player, remotePlayer;
+let player, remotePlayer, bot;
 let platforms = [];
 let weaponModel;
 
@@ -645,9 +614,6 @@ const menuCam = {
   centerX: 0, centerZ: 18, pitch: -0.05,
 };
 
-/* ============================================================
-   P2P СОСТОЯНИЕ
-   ============================================================ */
 const net = {
   peer: null, conn: null, isHost: false, isOnline: false,
   myName: 'Игрок', otherName: 'Другой', roomCode: null, connected: false,
@@ -656,6 +622,26 @@ const net = {
   hostHp: 100, guestHp: 100,
   hostScore: 0, guestScore: 0,
 };
+
+// Константы
+const FLOOR = 60;
+const PLAYER_HEIGHT = 1.6;
+const GRAVITY = -22;
+const JUMP_VELOCITY = 8.0;
+const PLAYER_SPEED = 8;
+const PLAYER_RADIUS = 0.4;
+const TICK_RATE = 30;
+const TICK_MS = 1000 / TICK_RATE;
+
+// Бот (AI)
+const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3, REPOSITION:4, FLEE:5, PEEK:6 };
+const BOT_SIGHT_DIST = 55, BOT_ATTACK_DIST = 22, BOT_FOV = Math.PI * 0.75;
+const BOT_HEARING_DIST = 60, BOT_SPEED = 4.2, BOT_SPEED_FLEE = 6.0, BOT_SPEED_STRAFE = 5.0;
+const BOT_HP = 300, BOT_HP_REGEN = 8, BOT_REGEN_DELAY = 3000;
+const BOT_FIRE_COOLDOWN = 600, BOT_DAMAGE = 12, BOT_ACCURACY = 0.4;
+const BOT_REACTION_TIME = 250, BOT_SEARCH_TIME = 6000;
+const BOT_STRAFE_INTERVAL = 900, BOT_PEEK_TIME = 700, BOT_DODGE_RANGE = 30;
+const BOT_SPAWN = { x: -45, z: -45 };
 
 /* ============================================================
    АУДИО
@@ -757,7 +743,6 @@ function initScene() {
   sun.position.set(20, 40, 15);
   scene.add(sun);
 
-  // пол
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(FLOOR*2, FLOOR*2),
     new THREE.MeshStandardMaterial({ color:0x556b4a, roughness:1 })
@@ -768,13 +753,11 @@ function initScene() {
   grid.position.y = 0.01;
   scene.add(grid);
 
-  // периметр
   addBox(0, 0, -FLOOR, FLOOR*2, 5, 1, 0x5a4a3a);
   addBox(0, 0,  FLOOR, FLOOR*2, 5, 1, 0x5a4a3a);
   addBox(-FLOOR, 0, 0, 1, 5, FLOOR*2, 0x5a4a3a);
   addBox( FLOOR, 0, 0, 1, 5, FLOOR*2, 0x5a4a3a);
 
-  // стены
   const walls = [
     [-25, -20, 1, 40, 4], [ 25,  20, 1, 40, 4],
     [-10,   0, 30, 1, 4], [ 10, -30, 1, 30, 4],
@@ -787,7 +770,6 @@ function initScene() {
   ];
   walls.forEach(([x, z, w, d, h], i) => addBox(x, 0, z, w, h, d, i%2 ? 0x7a6a5a : 0x9a8a6a));
 
-  // платформы
   platforms = [
     [  0, 0,  18, 3, 1.0, 3], [  4, 0,  14, 3, 1.6, 3], [  8, 0,  10, 3, 2.2, 3],
     [ 12, 0,  14, 3, 2.8, 3], [ 16, 0,  18, 3, 2.2, 3], [ 20, 0,  14, 3, 1.6, 3],
@@ -814,22 +796,24 @@ function initScene() {
     vy: 0, yaw: Math.PI, pitch: 0,
     hp: 100, alive: true,
     onGround: true, coyoteTimer: 0,
-    firePressed: false, lastShotTime: 0,
-    weapon: 'rifle', // 'rifle' | 'shotgun'
-    grenades: 3, lastGrenadeTime: 0
+    weapon: 'rifle', grenades: 3, lastGrenadeTime: 0
   };
 
-  // удалённый игрок (модель)
+  // удалённый игрок (для онлайна)
   remotePlayer = createRemotePlayerModel();
   remotePlayer.group.visible = false;
   scene.add(remotePlayer.group);
+
+  // Бот (для одиночки)
+  bot = createBot(BOT_SPAWN.x, BOT_SPAWN.z);
+  bot.group.visible = false;
+  scene.add(bot.group);
 
   // оружие в кадре
   weaponModel = createWeaponModel();
   camera.add(weaponModel);
   scene.add(camera);
 
-  // resize
   addEventListener('resize', () => {
     if (!camera) return;
     camera.aspect = innerWidth / innerHeight;
@@ -838,7 +822,7 @@ function initScene() {
   });
 }
 
-/* ========== ОРУЖИЕ В КАДРЕ ========== */
+/* ========== ОРУЖИЕ ========== */
 function createWeaponModel() {
   const g = new THREE.Group();
   const gunMat = new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.5, metalness:0.6 });
@@ -865,7 +849,6 @@ function createWeaponModel() {
   return g;
 }
 
-/* ========== УДАЛЁННЫЙ ИГРОК ========== */
 function createRemotePlayerModel() {
   const g = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({ color:0x4488dd, roughness:0.6, emissive:0x112244 });
@@ -919,6 +902,54 @@ function updateRemoteTag(name) {
   remotePlayer.tagTex.needsUpdate = true;
 }
 
+/* ========== БОТ (возвращаем) ========== */
+function createBot(x, z) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  const bodyMat = new THREE.MeshStandardMaterial({ color:0xcc3333, roughness:0.6, emissive:0x220000 });
+  const headMat = new THREE.MeshStandardMaterial({ color:0xffaa66, roughness:0.6, emissive:0x221100 });
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 1.4, 10), bodyMat);
+  torso.position.y = 1.2; g.add(torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 8), headMat);
+  head.position.y = 2.2; g.add(head);
+  const gun = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.9, 6),
+                              new THREE.MeshStandardMaterial({ color:0x222222 }));
+  gun.rotation.x = Math.PI/2; gun.position.set(0.45, 1.4, -0.5); g.add(gun);
+  const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.5, 10),
+                              new THREE.MeshStandardMaterial({color:0x333333}));
+  legs.position.y = 0.25; g.add(legs);
+  
+  const hitHead = new THREE.Mesh(new THREE.SphereGeometry(0.42, 6, 5),
+                                 new THREE.MeshBasicMaterial({visible:false}));
+  hitHead.position.y = 2.2;
+  hitHead.userData = { part:'head', isBot: true };
+  g.add(hitHead);
+  const hitBody = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.9, 6),
+                                 new THREE.MeshBasicMaterial({visible:false}));
+  hitBody.position.y = 1.05;
+  hitBody.userData = { part:'body', isBot: true };
+  g.add(hitBody);
+
+  const b = {
+    group: g, alive: true, hp: BOT_HP,
+    hitHead, hitBody,
+    state: BOT_STATE.PATROL,
+    lastShot: 0, lastDamaged: -99999, respawnAt: 0,
+    facing: 0, gun,
+    path: null, pathIdx: 0, repathAt: 0,
+    lastSeenX: 0, lastSeenZ: 0, lastSeenTime: 0,
+    hasSeenPlayer: false, spottedAt: 0,
+    patrolTarget: null, patrolWaitUntil: 0,
+    strafeDir: 1, strafeUntil: 0,
+    peekUntil: 0, hideUntil: 0, coverPoint: null,
+    heardPlayerX: 0, heardPlayerZ: 0, heardTime: -99999,
+    dodgeActive: false, dodgeUntil: 0, dodgeX: 0, dodgeZ: 0,
+  };
+  hitHead.userData.bot = b;
+  hitBody.userData.bot = b;
+  return b;
+}
+
 /* ========== КОЛЛИЗИИ ========== */
 const _testBox = new THREE.Box3();
 const _min = new THREE.Vector3();
@@ -958,7 +989,6 @@ function groundHeightAt(nx, nz, fromY, radius) {
   return best;
 }
 
-/* ========== ФИЗИКА ========== */
 function stepPlayerPhysics(state, moveInput, dt) {
   const yaw = state.yaw;
   const forwardX = -Math.sin(yaw);
@@ -1013,7 +1043,7 @@ function tryJump(state) {
 }
 
 /* ========== УПРАВЛЕНИЕ ========== */
-const input = { moveX: 0, moveY: 0, fire: false, useGrenade: false };
+const input = { moveX: 0, moveY: 0, fire: false };
 const LOOK_SENS = 0.006;
 const STICK_RADIUS = 60, STICK_DEADZONE = 3;
 const leftHalf = document.getElementById('leftHalf');
@@ -1106,18 +1136,17 @@ rightHalf.addEventListener('touchcancel', endLook, { passive:false });
 const jumpBtn = document.getElementById('jump');
 jumpBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
-  if (mode === MODE.PLAY && player.alive) tryJump(player);
+  if (mode !== MODE.MENU && player.alive) tryJump(player);
 }, { passive:false });
 jumpBtn.addEventListener('mousedown', () => {
-  if (mode === MODE.PLAY && player.alive) tryJump(player);
+  if (mode !== MODE.MENU && player.alive) tryJump(player);
 });
 
 const swapBtn = document.getElementById('swapBtn');
 swapBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
-  if (mode === MODE.PLAY && player.alive) {
+  if (mode !== MODE.MENU && player.alive) {
     player.weapon = player.weapon === 'rifle' ? 'shotgun' : 'rifle';
-    // Визуально можно менять модель, но пока просто звук
     sounds.shot(0, 0.1);
   }
 }, { passive:false });
@@ -1125,7 +1154,7 @@ swapBtn.addEventListener('touchstart', e => {
 const grenadeBtn = document.getElementById('grenadeBtn');
 grenadeBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
-  if (mode === MODE.PLAY && player.alive) throwGrenade();
+  if (mode !== MODE.MENU && player.alive) throwGrenade();
 }, { passive:false });
 
 const fireBtn = document.getElementById('fire');
@@ -1135,23 +1164,21 @@ fireBtn.addEventListener('touchcancel',e => { e.preventDefault(); e.stopPropagat
 fireBtn.addEventListener('mousedown',  () => input.fire = true);
 fireBtn.addEventListener('mouseup',    () => input.fire = false);
 
-/* ========== СТРЕЛЬБА И ОРУЖИЕ ========== */
+/* ========== СТРЕЛЬБА И УРОН ========== */
 let lastShot = 0;
-const SHOT_COOLDOWN_RIFLE = 110;
-const SHOT_COOLDOWN_SHOTGUN = 800;
 
 function tryShoot() {
   if (!player.alive) return;
   const now = performance.now();
-  const cooldown = player.weapon === 'rifle' ? SHOT_COOLDOWN_RIFLE : SHOT_COOLDOWN_SHOTGUN;
+  const cooldown = player.weapon === 'rifle' ? 110 : 800;
   if (now - lastShot < cooldown) return;
   lastShot = now;
 
-  // отдача
-  weaponModel.position.z = 0.05;
-  setTimeout(() => { if (weaponModel) weaponModel.position.z = 0; }, 50);
+  if (weaponModel) {
+    weaponModel.position.z = 0.05;
+    setTimeout(() => { if (weaponModel) weaponModel.position.z = 0; }, 50);
+  }
 
-  // звук с панорамой (если враг стреляет, он будет слышен, но мы играем свой выстрел)
   if (player.weapon === 'rifle') sounds.shot(0, 0.5);
   else sounds.shotgun(0, 0.8);
 
@@ -1161,9 +1188,15 @@ function tryShoot() {
   camera.getWorldPosition(origin);
 
   const targets = [];
-  if (remotePlayer.group.visible) {
+  
+  // Если мы в онлайне - проверяем игрока, если в одиночке - бота
+  if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible) {
     targets.push(remotePlayer.hitHead, remotePlayer.hitBody);
   }
+  if (mode === MODE.PLAY_SOLO && bot.alive) {
+    targets.push(bot.hitHead, bot.hitBody);
+  }
+  
   for (let i = 0; i < colliders.length; i++) targets.push(colliders[i].mesh);
 
   raycaster.set(origin, shootDir);
@@ -1172,7 +1205,9 @@ function tryShoot() {
   const end = first ? first.point.clone() : origin.clone().add(shootDir.clone().multiplyScalar(80));
   spawnTracer(origin, end, 0xffaa00);
 
-  if (first && first.object.userData.part) {
+  if (!first) return;
+
+  if (first.object.userData.part) {
     const isHead = first.object.userData.part === 'head';
     let dmg = 0;
     if (player.weapon === 'rifle') dmg = isHead ? 80 : 25;
@@ -1182,17 +1217,26 @@ function tryShoot() {
     if (isHead) sounds.headshot(0, 0.5);
     else sounds.hit(0, 0.5);
 
-    if (net.isOnline) {
+    if (mode === MODE.PLAY_SOLO && first.object.userData.isBot) {
+      // Урон боту
+      bot.hp -= dmg;
+      bot.lastDamaged = performance.now();
+      if (bot.hp <= 0) {
+        bot.alive = false;
+        bot.group.rotation.x = -Math.PI/2;
+        bot.group.position.y = -0.6;
+        bot.respawnAt = performance.now() + 5000;
+      }
+    } 
+    else if (mode === MODE.PLAY_ONLINE) {
+      // Сетевой урон
       net.conn.send({ t:'dmg', dmg, head: isHead, weapon: player.weapon });
-      
       if (net.isHost) {
         net.guestHp -= dmg;
         if (net.guestHp < 0) net.guestHp = 0;
         otherHp.textContent = net.guestHp;
         addKillfeed(`${net.myName} → ${net.otherName}`, isHead ? '#ff4444' : '#ffaa44');
-        
         net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
-        
         if (net.guestHp <= 0) {
           net.conn.send({ t:'kill', killer: net.myName, victim: net.otherName });
           net.hostScore++;
@@ -1250,7 +1294,6 @@ function updateGrenades(dt, now) {
       if (now - ud.born > 2000) {
         ud.exploded = true;
         sounds.explode(0, 1);
-        // взрыв
         const sphere = new THREE.Mesh(
           new THREE.SphereGeometry(1, 8, 6),
           new THREE.MeshBasicMaterial({ color:0xff8800, transparent:true, opacity:0.5 })
@@ -1261,8 +1304,8 @@ function updateGrenades(dt, now) {
         scene.remove(g);
         grenades.splice(i, 1);
 
-        // урон от гранаты (проверяем дистанцию до игрока и до remotePlayer)
         const explodeDist = 5;
+        // Урон игроку
         if (player.alive) {
           const dist = player.pos.distanceTo(g.position);
           if (dist < explodeDist) {
@@ -1273,23 +1316,32 @@ function updateGrenades(dt, now) {
               hpEl.textContent = player.hp;
               dmgFlash.style.opacity = '0.8';
               setTimeout(() => dmgFlash.style.opacity = '0', 100);
-              if (player.hp <= 0) die();
+              if (player.hp <= 0) {
+                player.alive = false;
+                showDeathScreen(net.myName, 'ГРАНАТА');
+              }
             }
           }
         }
 
-        if (remotePlayer.group.visible && remotePlayer.group.position.distanceTo(g.position) < explodeDist) {
-          // если мы хост, отправляем урон гостю от гранаты. (Или шлём "dmg" если мы гость)
+        // Урон боту в одиночке
+        if (mode === MODE.PLAY_SOLO && bot.alive && bot.group.position.distanceTo(g.position) < explodeDist) {
+          bot.hp -= 100;
+          if (bot.hp <= 0) {
+            bot.alive = false;
+            bot.group.rotation.x = -Math.PI/2;
+            bot.group.position.y = -0.6;
+            bot.respawnAt = performance.now() + 5000;
+          }
+        }
+
+        // Урон онлайну
+        if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible && remotePlayer.group.position.distanceTo(g.position) < explodeDist) {
           if (net.isHost) {
             net.guestHp -= 80;
             if (net.guestHp < 0) net.guestHp = 0;
             otherHp.textContent = net.guestHp;
             net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
-            if (net.guestHp <= 0) {
-              net.conn.send({ t:'kill', killer: net.myName, victim: net.otherName });
-              net.hostScore++;
-              updateScoreboard();
-            }
           } else {
             net.conn.send({ t:'dmg', dmg: 80, head: false, weapon: 'grenade' });
           }
@@ -1307,11 +1359,7 @@ function spawnBlood(pos) {
     );
     p.position.copy(pos);
     p.userData = {
-      vel: new THREE.Vector3(
-        (Math.random() - 0.5) * 5,
-        Math.random() * 4,
-        (Math.random() - 0.5) * 5
-      ),
+      vel: new THREE.Vector3((Math.random() - 0.5) * 5, Math.random() * 4, (Math.random() - 0.5) * 5),
       born: performance.now()
     };
     scene.add(p);
@@ -1333,10 +1381,6 @@ function updateBlood(dt, now) {
   }
 }
 
-/* ========== ВСПОМОГАТЕЛЬНЫЕ СПИСКИ ========== */
-const grenades = [];
-const bloodParticles = [];
-
 function spawnTracer(a, b, color) {
   const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
   const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.9 });
@@ -1345,25 +1389,17 @@ function spawnTracer(a, b, color) {
   tracers.push({ line, born: performance.now() });
 }
 
-/* ========== УРОН И СМЕРТЬ ========== */
 function updateScoreboard() {
   scoreboard.textContent = `Счёт: ${net.hostScore} - ${net.guestScore}`;
 }
 
 function showDeathScreen(victim, killer) {
-  if (victim !== net.myName) return;
+  if (victim !== net.myName && victim !== 'Игрок') return;
   document.getElementById('deathKiller').textContent = killer;
   document.getElementById('deathOverlay').classList.add('show');
   player.alive = false;
   input.fire = false;
   input.moveX = 0; input.moveY = 0;
-}
-
-function die() {
-  player.alive = false;
-  input.fire = false;
-  input.moveX = 0; input.moveY = 0;
-  showDeathScreen(net.myName, '???');
 }
 
 function addKillfeed(text, color='#fff') {
@@ -1376,40 +1412,246 @@ function addKillfeed(text, color='#fff') {
 }
 
 /* ============================================================
-   P2P — PeerJS
+   ЛОГИКА БОТА
    ============================================================ */
-function setNetStatus(text, cls) {
-  const el = document.getElementById('netStatus');
-  el.textContent = text;
-  el.className = 'netStatus' + (cls ? ' ' + cls : '');
-}
-function showView(viewId) {
-  document.querySelectorAll('.netView').forEach(v => v.classList.remove('show'));
-  document.getElementById(viewId).classList.add('show');
-}
-function genRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return 'zak' + s.toLowerCase();
-}
-function displayRoomCode(code) {
-  return code.replace('zak', '').toUpperCase();
-}
-
-let pingInterval;
-function startPing() {
-  if (pingInterval) clearInterval(pingInterval);
-  pingInterval = setInterval(() => {
-    if (net.conn && net.connected) {
-      net.conn.send({ t: 'ping' });
+function updateBot(dt, now) {
+  if (!bot.alive) {
+    if (now >= bot.respawnAt) {
+      bot.alive = true;
+      bot.hp = BOT_HP;
+      bot.group.rotation.x = 0;
+      bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
+      bot.state = BOT_STATE.PATROL;
+      bot.hasSeenPlayer = false;
+      bot.path = null;
     }
-  }, 10000);
-}
-function stopPing() {
-  if (pingInterval) clearInterval(pingInterval);
+    return;
+  }
+  if (!player.alive) return;
+
+  const bp = bot.group.position;
+  const dx = player.pos.x - bp.x, dz = player.pos.z - bp.z;
+  const dist = Math.hypot(dx, dz);
+  const playerEyeY = player.pos.y + PLAYER_HEIGHT;
+  const botEyeY = 1.6;
+
+  let canSeePlayer = false;
+  if (dist < BOT_SIGHT_DIST) {
+    const angleToPlayer = Math.atan2(dx, dz);
+    const facingDiff = Math.abs(angleDiff(angleToPlayer, bot.facing));
+    if (facingDiff < BOT_FOV * 0.5 || dist < 5) {
+      if (hasLineOfSight(bp.x, bp.z, player.pos.x, player.pos.z, botEyeY, playerEyeY)) canSeePlayer = true;
+    }
+  }
+  if (canSeePlayer) {
+    if (!bot.hasSeenPlayer) bot.spottedAt = now;
+    bot.hasSeenPlayer = true;
+    bot.lastSeenX = player.pos.x; bot.lastSeenZ = player.pos.z;
+    bot.lastSeenTime = now;
+  }
+  
+  if (now - bot.lastDamaged > BOT_REGEN_DELAY) {
+    bot.hp = Math.min(BOT_HP, bot.hp + BOT_HP_REGEN * dt);
+  }
+
+  const lowHP = bot.hp < BOT_HP * 0.35;
+  if (lowHP && !canSeePlayer) bot.state = BOT_STATE.FLEE;
+  else if (canSeePlayer) {
+    if (dist < BOT_ATTACK_DIST) bot.state = BOT_STATE.ATTACK;
+    else bot.state = BOT_STATE.CHASE;
+  } else {
+    bot.state = BOT_STATE.PATROL;
+    bot.hasSeenPlayer = false;
+  }
+
+  if (bot.state === BOT_STATE.ATTACK) {
+    turnTowards(bot, Math.atan2(dx, dz), dt, 14);
+    if (now - bot.spottedAt < BOT_REACTION_TIME) return;
+    if (now - bot.lastShot < BOT_FIRE_COOLDOWN) return;
+    if (!hasLineOfSight(bp.x, bp.z, player.pos.x, player.pos.z, 1.6, playerEyeY)) return;
+    
+    bot.lastShot = now;
+    if (Math.random() < BOT_ACCURACY) {
+      player.hp -= BOT_DAMAGE;
+      if (player.hp < 0) player.hp = 0;
+      hpEl.textContent = player.hp;
+      dmgFlash.style.opacity = '0.8';
+      setTimeout(() => dmgFlash.style.opacity = '0', 100);
+      sounds.hit(0, 0.5);
+      if (player.hp <= 0) {
+        player.alive = false;
+        showDeathScreen('Игрок', 'БОТ');
+      }
+    }
+  }
+  else if (bot.state === BOT_STATE.CHASE) {
+    if (!bot.path || now - bot.repathAt > 400) {
+      bot.path = findPath(bp.x, bp.z, player.pos.x, player.pos.z);
+      bot.pathIdx = 0; bot.repathAt = now;
+    }
+    moveBotAlongPath(bot, dt, 1);
+  }
+  else if (bot.state === BOT_STATE.PATROL) {
+    if (!bot.patrolTarget || Math.hypot(bot.patrolTarget.x - bp.x, bot.patrolTarget.z - bp.z) < 1.2 || (bot.patrolWaitUntil && now > bot.patrolWaitUntil)) {
+      if (bot.patrolWaitUntil && now < bot.patrolWaitUntil) {
+        turnTowards(bot, bot.facing + dt * 1.5, dt, 10);
+        return;
+      }
+      for (let i = 0; i < 25; i++) {
+        const gx = (Math.random() * NAV_SIZE) | 0;
+        const gy = (Math.random() * NAV_SIZE) | 0;
+        if (isWalkable(gx, gy)) {
+          const w = gridToWorld(gx, gy);
+          bot.patrolTarget = w;
+          bot.path = findPath(bp.x, bp.z, w.x, w.z);
+          bot.pathIdx = 0;
+          bot.patrolWaitUntil = now + 600 + Math.random() * 1200;
+          break;
+        }
+      }
+      return;
+    }
+    moveBotAlongPath(bot, dt, 0.7);
+  }
 }
 
+function moveBotAlongPath(b, dt, speedMul = 1) {
+  const bp = b.group.position;
+  if (!b.path || b.pathIdx >= b.path.length) return;
+  const wp = b.path[b.pathIdx];
+  const wx = wp.x - bp.x, wz = wp.z - bp.z;
+  const wdist = Math.hypot(wx, wz);
+  if (wdist < 0.6) { b.pathIdx++; return; }
+  const step = BOT_SPEED * speedMul * dt;
+  const nx = bp.x + (wx / wdist) * step;
+  const nz = bp.z + (wz / wdist) * step;
+  if (canExistAt(nx, bp.z, 0, 0.5)) bp.x = nx;
+  if (canExistAt(bp.x, nz, 0, 0.5)) bp.z = nz;
+  turnTowards(b, Math.atan2(wx, wz), dt, 8);
+}
+
+function turnTowards(b, targetYaw, dt, speed = 8) {
+  const dyaw = angleDiff(targetYaw, b.facing);
+  b.facing += dyaw * Math.min(1, dt * speed);
+  b.group.rotation.y = b.facing;
+}
+function angleDiff(a, b) {
+  let d = a - b;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return d;
+}
+function hasLineOfSight(fromX, fromZ, toX, toZ, fromY = 1.6, toY = 1.6) {
+  const ray = new THREE.Ray(new THREE.Vector3(fromX, fromY, fromZ), new THREE.Vector3(toX - fromX, toY - fromY, toZ - fromZ).normalize());
+  const dist = Math.hypot(toX - fromX, toZ - fromZ);
+  for (let i = 0; i < colliders.length; i++) {
+    const hit = ray.intersectBox(colliders[i].box, new THREE.Vector3());
+    if (hit && hit.distanceTo(ray.origin) < dist - 0.2) return false;
+  }
+  return true;
+}
+
+/* ========== NAV MESH (Для бота) ========== */
+let NAV_CELL, NAV_SIZE, NAV_OFFSET, NAV_RADIUS;
+let navGrid;
+function buildNavGrid() {
+  NAV_CELL = 1.5; NAV_SIZE = Math.ceil(FLOOR*2 / NAV_CELL); NAV_OFFSET = FLOOR; NAV_RADIUS = 0.6;
+  navGrid = new Uint8Array(NAV_SIZE * NAV_SIZE);
+  const testBox = new THREE.Box3();
+  const min = new THREE.Vector3(), max = new THREE.Vector3();
+  for (let gy = 0; gy < NAV_SIZE; gy++) {
+    for (let gx = 0; gx < NAV_SIZE; gx++) {
+      const wx = gx * NAV_CELL - NAV_OFFSET + NAV_CELL/2;
+      const wz = gy * NAV_CELL - NAV_OFFSET + NAV_CELL/2;
+      min.set(wx - NAV_RADIUS, 0, wz - NAV_RADIUS);
+      max.set(wx + NAV_RADIUS, 2, wz + NAV_RADIUS);
+      testBox.min.copy(min); testBox.max.copy(max);
+      let blocked = 0;
+      for (let i = 0; i < colliders.length; i++) {
+        if (testBox.intersectsBox(colliders[i].box)) { blocked = 1; break; }
+      }
+      navGrid[gy * NAV_SIZE + gx] = blocked;
+    }
+  }
+}
+function worldToGrid(wx, wz) { return { gx: Math.floor((wx + NAV_OFFSET) / NAV_CELL), gy: Math.floor((wz + NAV_OFFSET) / NAV_CELL) }; }
+function gridToWorld(gx, gy) { return { x: gx * NAV_CELL - NAV_OFFSET + NAV_CELL/2, z: gy * NAV_CELL - NAV_OFFSET + NAV_CELL/2 }; }
+function isWalkable(gx, gy) {
+  if (gx < 0 || gy < 0 || gx >= NAV_SIZE || gy >= NAV_SIZE) return false;
+  return navGrid[gy * NAV_SIZE + gx] === 0;
+}
+class MinHeap {
+  constructor() { this.a = []; }
+  push(node) {
+    this.a.push(node); let i = this.a.length - 1;
+    while (i > 0) {
+      const p = (i-1) >> 1; if (this.a[p].f <= this.a[i].f) break;
+      [this.a[p], this.a[i]] = [this.a[i], this.a[p]]; i = p;
+    }
+  }
+  pop() {
+    const top = this.a[0]; const last = this.a.pop();
+    if (this.a.length) {
+      this.a[0] = last; let i = 0; const n = this.a.length;
+      while (true) {
+        const l = 2*i+1, r = 2*i+2; let s = i;
+        if (l < n && this.a[l].f < this.a[s].f) s = l;
+        if (r < n && this.a[r].f < this.a[s].f) s = r;
+        if (s === i) break;
+        [this.a[s], this.a[i]] = [this.a[i], this.a[s]]; i = s;
+      }
+    }
+    return top;
+  }
+  get size() { return this.a.length; }
+}
+const _gScores = new Float32Array(80*80);
+const _cameFrom = new Int32Array(80*80);
+function heuristic(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by) * NAV_CELL; }
+function findPath(sx, sz, ex, ez) {
+  const s = worldToGrid(sx, sz); const e = worldToGrid(ex, ez);
+  if (!isWalkable(s.gx, s.gy) || !isWalkable(e.gx, e.gy)) return null;
+  _gScores.fill(Infinity); _cameFrom.fill(-1);
+  const startIdx = s.gy * NAV_SIZE + s.gx; const endIdx = e.gy * NAV_SIZE + e.gx;
+  if (startIdx === endIdx) return [{ x: ex, z: ez }];
+  const open = new MinHeap(); const inOpen = new Uint8Array(NAV_SIZE * NAV_SIZE);
+  _gScores[startIdx] = 0;
+  open.push({ idx: startIdx, gx: s.gx, gy: s.gy, f: heuristic(s.gx, s.gy, e.gx, e.gy) });
+  inOpen[startIdx] = 1;
+  const dirs = [[ 1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [ 1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
+  while (open.size) {
+    const cur = open.pop();
+    if (cur.idx === endIdx) {
+      const path = []; let c = endIdx;
+      while (c !== -1 && c !== startIdx) {
+        const gx = c % NAV_SIZE; const gy = (c / NAV_SIZE) | 0;
+        path.push(gridToWorld(gx, gy)); c = _cameFrom[c];
+      }
+      path.reverse(); if (path.length) path[path.length - 1] = { x: ex, z: ez };
+      return path;
+    }
+    inOpen[cur.idx] = 0;
+    for (let d = 0; d < dirs.length; d++) {
+      const dx = dirs[d][0], dy = dirs[d][1], cost = dirs[d][2];
+      const nx = cur.gx + dx, ny = cur.gy + dy;
+      if (!isWalkable(nx, ny)) continue;
+      if (dx !== 0 && dy !== 0 && (!isWalkable(cur.gx + dx, cur.gy) || !isWalkable(cur.gx, cur.gy + dy))) continue;
+      const nIdx = ny * NAV_SIZE + nx; const tentative = _gScores[cur.idx] + cost * NAV_CELL;
+      if (tentative < _gScores[nIdx]) {
+        _gScores[nIdx] = tentative; _cameFrom[nIdx] = cur.idx;
+        if (!inOpen[nIdx]) {
+          open.push({ idx: nIdx, gx: nx, gy: ny, f: tentative + heuristic(nx, ny, e.gx, e.gy) });
+          inOpen[nIdx] = 1;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/* ============================================================
+   СЕТЕВЫЕ ПЕРЕХОДЫ
+   ============================================================ */
 function createRoom() {
   const nick = (document.getElementById('hostNameInput').value || 'Хост').trim().slice(0, 12);
   if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
@@ -1439,17 +1681,14 @@ function createRoom() {
     net.conn = conn;
     conn.on('open', () => { 
       net.connected = true; 
-      startPing();
       if (voice.active && voice.stream) {
         voice.call = net.peer.call(conn.peer, voice.stream);
-        voice.call.on('stream', s => {
-          const a = new Audio(); a.srcObject = s; a.play();
-        });
+        voice.call.on('stream', s => { const a = new Audio(); a.srcObject = s; a.play(); });
       }
     });
     conn.on('data', handlePeerData);
     conn.on('close', () => {
-      if (mode === MODE.PLAY) { alert('Соединение разорвано'); exitToMenu(); }
+      if (mode === MODE.PLAY_ONLINE) { alert('Соединение разорвано'); exitToMenu(); }
     });
   });
 
@@ -1483,17 +1722,14 @@ function joinRoom() {
     net.conn.on('open', () => {
       net.connected = true;
       net.conn.send({ t:'hello', name: nick });
-      startPing();
       if (voice.active && voice.stream) {
         voice.call = net.peer.call(code, voice.stream);
-        voice.call.on('stream', s => {
-          const a = new Audio(); a.srcObject = s; a.play();
-        });
+        voice.call.on('stream', s => { const a = new Audio(); a.srcObject = s; a.play(); });
       }
     });
     net.conn.on('data', handlePeerData);
     net.conn.on('close', () => {
-      if (mode === MODE.PLAY) { alert('Соединение разорвано'); exitToMenu(); }
+      if (mode === MODE.PLAY_ONLINE) { alert('Соединение разорвано'); exitToMenu(); }
       else setNetStatus('НЕ УДАЛОСЬ ПОДКЛЮЧИТЬСЯ', 'err');
     });
   });
@@ -1507,13 +1743,7 @@ function joinRoom() {
 function handlePeerData(data) {
   if (!data || !data.t) return;
 
-  if (data.t === 'ping') {
-    if (net.conn) net.conn.send({ t: 'pong' });
-  }
-  else if (data.t === 'pong') {
-    // сервер жив
-  }
-  else if (data.t === 'hello') {
+  if (data.t === 'hello') {
     if (net.isHost) {
       net.otherName = data.name;
       const guestSpawnX = 0;
@@ -1599,7 +1829,6 @@ function handlePeerData(data) {
       input.fire = false;
     }
     addKillfeed(`${data.killer} → ${data.victim}`, '#ff4444');
-    // Обновление счёта
     if (data.killer === net.myName) net.hostScore++;
     else net.guestScore++;
     updateScoreboard();
@@ -1607,8 +1836,9 @@ function handlePeerData(data) {
 }
 
 function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
-  mode = MODE.PLAY;
+  mode = MODE.PLAY_ONLINE;
   net.isOnline = true;
+  document.body.classList.add('ingame-online');
   document.getElementById('voiceToggleBtn').style.display = 'none';
 
   player.pos.set(mySpawnX, 0, mySpawnZ);
@@ -1621,6 +1851,9 @@ function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
   remotePlayer.group.visible = true;
   updateRemoteTag(net.otherName);
 
+  bot.group.visible = false; // Бот отключен в онлайне
+  weaponModel.visible = true;
+
   net.hostHp = 100;
   net.guestHp = 100;
 
@@ -1630,96 +1863,51 @@ function enterOnlineGame(mySpawnX, mySpawnZ, otherSpawnX, otherSpawnZ) {
 
   netBadge.textContent = net.isHost ? '👑 ХОСТ' : '👤 ГОСТЬ';
   netBadge.className = net.isHost ? 'host' : '';
+  netBadge.style.display = 'block';
   otherName.textContent = net.otherName;
   otherHp.textContent = 100;
   hpEl.textContent = 100;
-  scoreboard.style.display = 'block';
   updateScoreboard();
 
   clock.getDelta();
   startNetTick();
 }
 
-/* ========== СЕТЕВОЙ ТИК ========== */
-let netTickInterval = null;
-
-function startNetTick() {
-  if (netTickInterval) clearInterval(netTickInterval);
-
-  if (net.isHost) {
-    netTickInterval = setInterval(() => {
-      if (!net.connected || mode !== MODE.PLAY) return;
-
-      const guestState = {
-        pos: remotePlayer.group.position,
-        vy: remotePlayer._vy || 0,
-        yaw: net.guestInput.yaw,
-        pitch: net.guestInput.pitch,
-        onGround: remotePlayer._onGround !== false,
-        coyoteTimer: 0,
-      };
-      stepPlayerPhysics(guestState, net.guestInput, TICK_MS / 1000);
-      remotePlayer._vy = guestState.vy;
-      remotePlayer._onGround = guestState.onGround;
-      remotePlayer.group.rotation.y = guestState.yaw;
-
-      if (net.guestInput.fire) {
-        const now = performance.now();
-        if (!remotePlayer._lastShot || now - remotePlayer._lastShot > 110) {
-          remotePlayer._lastShot = now;
-          const from = remotePlayer.group.position.clone().add(new THREE.Vector3(0, 1.5, 0));
-          const to = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0));
-          
-          // Позиционный звук выстрела гостя
-          const localRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-          const dirToGuest = remotePlayer.group.position.clone().sub(player.pos).normalize();
-          const pan = localRight.dot(dirToGuest); // -1 слева, 1 справа
-          sounds.shot(pan, 0.6);
-
-          if (Math.random() < 0.5) to.x += (Math.random()-0.5) * 2;
-          if (Math.random() < 0.5) to.z += (Math.random()-0.5) * 2;
-          spawnTracer(from, to, 0xff6644);
-        }
-      }
-
-      net.conn.send({
-        t: 'state',
-        host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, pitch: player.pitch, alive: player.alive },
-      });
-    }, TICK_MS);
-  } else {
-    netTickInterval = setInterval(() => {
-      if (!net.connected || mode !== MODE.PLAY) return;
-
-      net.conn.send({
-        t: 'input',
-        mx: input.moveX, my: input.moveY,
-        yaw: player.yaw, pitch: player.pitch, fire: input.fire,
-        weapon: player.weapon,
-      });
-
-      const snap = net.lastSnapshot;
-      if (!snap) return;
-
-      const targetHost = snap.host;
-      const cp = remotePlayer.group.position;
-      cp.x += (targetHost.x - cp.x) * 0.3;
-      cp.y += (targetHost.y - cp.y) * 0.3;
-      cp.z += (targetHost.z - cp.z) * 0.3;
-      remotePlayer.group.rotation.y += (targetHost.yaw - remotePlayer.group.rotation.y) * 0.3;
-      remotePlayer.group.visible = targetHost.alive !== false;
-    }, TICK_MS);
-  }
-}
-
-function stopNetTick() {
-  if (netTickInterval) { clearInterval(netTickInterval); netTickInterval = null; }
-  stopPing();
-}
-
 /* ============================================================
-   UI МОДАЛКИ
+   УПРАВЛЕНИЕ СОСТОЯНИЕМ ИГРЫ
    ============================================================ */
+const menuEl = document.getElementById('menu');
+const tabs = document.querySelectorAll('.tab');
+const panels = {
+  inventory: document.getElementById('panel-inventory'),
+  play:      document.getElementById('panel-play'),
+  shop:      document.getElementById('panel-shop'),
+};
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const name = tab.dataset.tab;
+    tabs.forEach(t => t.classList.toggle('active', t === tab));
+    Object.keys(panels).forEach(k => panels[k].classList.toggle('active', k === name));
+  });
+});
+
+function setNetStatus(text, cls) {
+  const el = document.getElementById('netStatus');
+  el.textContent = text;
+  el.className = 'netStatus' + (cls ? ' ' + cls : '');
+}
+function showView(viewId) {
+  document.querySelectorAll('.netView').forEach(v => v.classList.remove('show'));
+  document.getElementById(viewId).classList.add('show');
+}
+function genRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return 'zak' + s.toLowerCase();
+}
+function displayRoomCode(code) { return code.replace('zak', '').toUpperCase(); }
+
 const netModal = document.getElementById('netModal');
 document.getElementById('netBtn').addEventListener('click', () => {
   netModal.classList.add('show');
@@ -1754,8 +1942,6 @@ document.getElementById('copyCodeBtn').addEventListener('click', () => {
   navigator.clipboard.writeText(code).then(() => {
     document.getElementById('copyCodeBtn').textContent = '✓ СКОПИРОВАНО';
     setTimeout(() => document.getElementById('copyCodeBtn').textContent = '📋 КОПИРОВАТЬ КОД', 1500);
-  }).catch(() => {
-    document.getElementById('copyCodeBtn').textContent = code + ' (скопируй вручную)';
   });
 });
 document.getElementById('hostCancelBtn').addEventListener('click', () => {
@@ -1765,24 +1951,29 @@ document.getElementById('hostCancelBtn').addEventListener('click', () => {
   showView('netStartView');
   setNetStatus('ОТМЕНЕНО', '');
 });
-
 document.getElementById('voiceToggleBtn').addEventListener('click', toggleVoice);
 document.getElementById('voiceToggleBtnGuest').addEventListener('click', toggleVoice);
 
-/* ============================================================
-   ПЕРЕХОДЫ
-   ============================================================ */
 function startSoloGame() {
-  mode = MODE.PLAY;
+  mode = MODE.PLAY_SOLO;
   net.isOnline = false;
   menuEl.classList.add('hidden');
   document.body.classList.add('ingame');
+  document.body.classList.remove('ingame-online');
+  
   remotePlayer.group.visible = false;
+  bot.group.visible = true;
+  bot.alive = true;
+  bot.hp = BOT_HP;
+  bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
+  bot.group.rotation.x = 0;
+  
   netBadge.textContent = 'ОДИНОЧНЫЙ';
   netBadge.className = '';
   netBadge.style.display = 'block';
-  otherHud.style.display = 'none';
+  
   scoreboard.style.display = 'none';
+  otherHud.style.display = 'none';
 
   player.pos.set(0, 0, 25);
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
@@ -1791,12 +1982,14 @@ function startSoloGame() {
   
   hpEl.textContent = 100;
   input.fire = false; input.moveX = 0; input.moveY = 0;
+  weaponModel.visible = true;
   clock.getDelta();
 }
 
 function exitToMenu() {
   stopNetTick();
   document.body.classList.remove('ingame');
+  document.body.classList.remove('ingame-online');
   menuEl.classList.remove('hidden');
   document.getElementById('deathOverlay').classList.remove('show');
   mode = MODE.MENU;
@@ -1808,6 +2001,7 @@ function exitToMenu() {
   net.isHost = false;
   net.lastSnapshot = null;
   remotePlayer.group.visible = false;
+  bot.group.visible = false;
 
   document.getElementById('voiceToggleBtn').style.display = 'block';
   document.getElementById('voiceToggleBtnGuest').style.display = 'block';
@@ -1817,6 +2011,69 @@ function exitToMenu() {
 document.getElementById('playBtn').addEventListener('click', startSoloGame);
 document.getElementById('exitBtn').addEventListener('click', exitToMenu);
 document.getElementById('deathMenu').addEventListener('click', exitToMenu);
+
+/* ========== СЕТЕВОЙ ТИК ========== */
+let netTickInterval = null;
+function startNetTick() {
+  if (netTickInterval) clearInterval(netTickInterval);
+  if (net.isHost) {
+    netTickInterval = setInterval(() => {
+      if (!net.connected || mode !== MODE.PLAY_ONLINE) return;
+      const guestState = {
+        pos: remotePlayer.group.position,
+        vy: remotePlayer._vy || 0,
+        yaw: net.guestInput.yaw,
+        pitch: net.guestInput.pitch,
+        onGround: remotePlayer._onGround !== false,
+        coyoteTimer: 0,
+      };
+      stepPlayerPhysics(guestState, net.guestInput, TICK_MS / 1000);
+      remotePlayer._vy = guestState.vy;
+      remotePlayer._onGround = guestState.onGround;
+      remotePlayer.group.rotation.y = guestState.yaw;
+
+      if (net.guestInput.fire) {
+        const now = performance.now();
+        if (!remotePlayer._lastShot || now - remotePlayer._lastShot > 110) {
+          remotePlayer._lastShot = now;
+          const from = remotePlayer.group.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+          const to = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0));
+          const localRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+          const dirToGuest = remotePlayer.group.position.clone().sub(player.pos).normalize();
+          const pan = localRight.dot(dirToGuest);
+          sounds.shot(pan, 0.6);
+          if (Math.random() < 0.5) to.x += (Math.random()-0.5) * 2;
+          if (Math.random() < 0.5) to.z += (Math.random()-0.5) * 2;
+          spawnTracer(from, to, 0xff6644);
+        }
+      }
+      net.conn.send({
+        t: 'state',
+        host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, pitch: player.pitch, alive: player.alive },
+      });
+    }, TICK_MS);
+  } else {
+    netTickInterval = setInterval(() => {
+      if (!net.connected || mode !== MODE.PLAY_ONLINE) return;
+      net.conn.send({
+        t: 'input',
+        mx: input.moveX, my: input.moveY,
+        yaw: player.yaw, pitch: player.pitch, fire: input.fire,
+        weapon: player.weapon,
+      });
+      const snap = net.lastSnapshot;
+      if (!snap) return;
+      const targetHost = snap.host;
+      const cp = remotePlayer.group.position;
+      cp.x += (targetHost.x - cp.x) * 0.3;
+      cp.y += (targetHost.y - cp.y) * 0.3;
+      cp.z += (targetHost.z - cp.z) * 0.3;
+      remotePlayer.group.rotation.y += (targetHost.yaw - remotePlayer.group.rotation.y) * 0.3;
+      remotePlayer.group.visible = targetHost.alive !== false;
+    }, TICK_MS);
+  }
+}
+function stopNetTick() { if (netTickInterval) { clearInterval(netTickInterval); netTickInterval = null; } }
 
 /* ============================================================
    ГЛАВНЫЙ ЦИКЛ
@@ -1838,13 +2095,14 @@ function animate() {
       if (input.fire) tryShoot();
     }
     
+    if (mode === MODE.PLAY_SOLO) updateBot(dt, now);
+    
     updateGrenades(dt, now);
     updateBlood(dt, now);
 
     const camY = player.pos.y + PLAYER_HEIGHT;
     camera.position.set(player.pos.x, camY, player.pos.z);
     
-    // плавное движение оружия
     if (weaponModel) {
       weaponModel.position.x += Math.sin(now * 0.005) * 0.001;
       weaponModel.position.y += Math.cos(now * 0.004) * 0.001;
@@ -1880,7 +2138,7 @@ function animate() {
    ============================================================ */
 let mouseDown = false;
 addEventListener('keydown', e => {
-  if (mode !== MODE.PLAY) return;
+  if (mode === MODE.MENU) return;
   if (!player || !player.alive) return;
   if (e.key === 'w' || e.key === 'W') input.moveY = -1;
   if (e.key === 's' || e.key === 'S') input.moveY = 1;
@@ -1899,23 +2157,21 @@ addEventListener('keyup', e => {
   if (e.key === ' ') input.fire = false;
 });
 addEventListener('mousedown', e => {
-  if (mode !== MODE.PLAY) return;
+  if (mode === MODE.MENU) return;
   if (e.target.closest('#fire, #jump, #exitBtn, #deathOverlay, #netModal, #swapBtn, #grenadeBtn')) return;
   mouseDown = true;
 });
 addEventListener('mouseup', () => mouseDown = false);
 addEventListener('mousemove', e => {
-  if (!mouseDown || mode !== MODE.PLAY) return;
+  if (!mouseDown || mode === MODE.MENU) return;
   if (!player || !player.alive) return;
   player.yaw -= e.movementX * LOOK_SENS;
   player.pitch -= e.movementY * LOOK_SENS;
   player.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, player.pitch));
 });
 
-/* ============================================================
-   СТАРТ
-   ============================================================ */
 initScene();
+buildNavGrid();
 animate();
 </script>
 </body>
