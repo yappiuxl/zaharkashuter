@@ -263,6 +263,7 @@
   #rightHalf { position:fixed; top:0; right:0; bottom:0; width:50%; z-index:5; touch-action:none; }
   #leftHalf  { position:fixed; top:0; left:0;  bottom:0; width:50%; z-index:5; touch-action:none; }
   #leftHalf, #rightHalf, #stickL, #fire, #jump, #hud, #crosshair, #netBadge, #otherHud, #exitBtn, #killfeed, #swapBtn, #grenadeBtn, #scoreboard { display:none; }
+  
   body.ingame #leftHalf, body.ingame #rightHalf { display:block; }
   body.ingame #stickL, body.ingame #fire, body.ingame #jump, body.ingame #swapBtn, body.ingame #grenadeBtn { display:flex; }
   body.ingame #hud, body.ingame #crosshair, body.ingame #netBadge, body.ingame #exitBtn { display:block; }
@@ -623,7 +624,6 @@ const net = {
   hostScore: 0, guestScore: 0,
 };
 
-// Константы
 const FLOOR = 60;
 const PLAYER_HEIGHT = 1.6;
 const GRAVITY = -22;
@@ -633,7 +633,6 @@ const PLAYER_RADIUS = 0.4;
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 
-// Бот (AI)
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3, REPOSITION:4, FLEE:5, PEEK:6 };
 const BOT_SIGHT_DIST = 55, BOT_ATTACK_DIST = 22, BOT_FOV = Math.PI * 0.75;
 const BOT_HEARING_DIST = 60, BOT_SPEED = 4.2, BOT_SPEED_FLEE = 6.0, BOT_SPEED_STRAFE = 5.0;
@@ -1318,7 +1317,7 @@ function updateGrenades(dt, now) {
               setTimeout(() => dmgFlash.style.opacity = '0', 100);
               if (player.hp <= 0) {
                 player.alive = false;
-                showDeathScreen(net.myName, 'ГРАНАТА');
+                showDeathScreen('Игрок', 'ГРАНАТА');
               }
             }
           }
@@ -1962,7 +1961,7 @@ function startSoloGame() {
   document.body.classList.remove('ingame-online');
   
   remotePlayer.group.visible = false;
-  bot.group.visible = true;
+  bot.group.visible = true; // Включаем бота
   bot.alive = true;
   bot.hp = BOT_HP;
   bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
