@@ -998,6 +998,22 @@ function tryShoot() {
     
     if (net.isOnline) {
       net.conn.send({ t:'hit', dmg, head: part === 'head' });
+      
+      // ХОСТ: если попал по гостю (remotePlayer), сразу вычитаем его ХП и обновляем
+      if (net.isHost) {
+        net.guestHp -= dmg;
+        if (net.guestHp < 0) net.guestHp = 0;
+        otherHp.textContent = net.guestHp;
+        addKillfeed(`${net.myName} → ${net.otherName}`, part === 'head' ? '#ff4444' : '#ffaa44');
+        
+        // Отправляем новые HP гостю
+        net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
+        
+        // Если гость умер
+        if (net.guestHp <= 0) {
+          net.conn.send({ t:'kill', killer: net.myName, victim: net.otherName });
+        }
+      }
     }
   }
 }
@@ -1192,37 +1208,64 @@ function handlePeerData(data) {
   }
   else if (data.t === 'hit') {
     if (net.isHost) {
+      // ХОСТ получает удар ОТ ГОСТЯ
       net.hostHp -= data.dmg;
       if (net.hostHp < 0) net.hostHp = 0;
+      
+      // Обновляем свой интерфейс
       hpEl.textContent = net.hostHp;
       dmgFlash.style.opacity = '0.8';
       setTimeout(() => dmgFlash.style.opacity = '0', 100);
       addKillfeed(`${net.otherName} → ${net.myName}`, data.head ? '#ff4444' : '#ffaa44');
+      
+      // Отправляем гостю новые HP
       net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
+      
+      // Если хост умер
       if (net.hostHp <= 0) {
+        net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
+        showDeathScreen(net.myName, net.otherName);
+      }
+    } else {
+      // ГОСТЬ получает удар ОТ ХОСТА (хост тоже отправляет hit)
+      net.guestHp -= data.dmg;
+      if (net.guestHp < 0) net.guestHp = 0;
+      
+      hpEl.textContent = net.guestHp;
+      dmgFlash.style.opacity = '0.8';
+      setTimeout(() => dmgFlash.style.opacity = '0', 100);
+      addKillfeed(`${net.otherName} → ${net.myName}`, data.head ? '#ff4444' : '#ffaa44');
+      
+      // Отправляем хосту новые HP
+      net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
+      
+      // Если гость умер
+      if (net.guestHp <= 0) {
         net.conn.send({ t:'kill', killer: net.otherName, victim: net.myName });
         showDeathScreen(net.myName, net.otherName);
       }
     }
   }
   else if (data.t === 'hp') {
-    if (!net.isHost) {
-      net.hostHp = data.host;
-      net.guestHp = data.guest;
-      otherHp.textContent = data.host;
-      hpEl.textContent = data.guest;
+    // Синхронизация HP
+    net.hostHp = data.host;
+    net.guestHp = data.guest;
+    
+    if (net.isHost) {
+      otherHp.textContent = data.guest; // хост видит ХП гостя
+    } else {
+      otherHp.textContent = data.host; // гость видит ХП хоста
     }
+    hpEl.textContent = net.isHost ? net.hostHp : net.guestHp;
   }
   else if (data.t === 'kill') {
-    if (!net.isHost) {
-      if (data.victim === net.myName) {
-        document.getElementById('deathKiller').textContent = data.killer;
-        document.getElementById('deathOverlay').classList.add('show');
-        player.alive = false;
-        input.fire = false;
-      }
-      addKillfeed(`${data.killer} → ${data.victim}`, '#ff4444');
+    if (data.victim === net.myName) {
+      document.getElementById('deathKiller').textContent = data.killer;
+      document.getElementById('deathOverlay').classList.add('show');
+      player.alive = false;
+      input.fire = false;
     }
+    addKillfeed(`${data.killer} → ${data.victim}`, '#ff4444');
   }
 }
 
@@ -1509,4 +1552,4 @@ initScene();
 animate();
 </script>
 </body>
-</html>
+       </html>
