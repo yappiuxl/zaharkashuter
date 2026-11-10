@@ -1261,7 +1261,9 @@ const net = {
 const MODE = { MENU: 0, PLAY_SOLO: 1, PLAY_ONLINE: 2 };
 let mode = MODE.MENU;
 let gameWinner = null;
-const soloStats = { kills: 0, deaths: 0, targetKills: 16, targetDeaths: 16 };
+const soloStats = { kills: 0, deaths: 0 };
+const SOLO_TARGET_KILLS = 16;
+const SOLO_TARGET_DEATHS = 16;
 
 const PLAYER_HEIGHT = 1.6;
 const CROUCH_HEIGHT = 1.1;
@@ -1966,7 +1968,7 @@ function killBot() {
   if (mode === MODE.PLAY_SOLO && !gameWinner) {
     soloStats.kills++;
     updateSoloScoreboard();
-    if (soloStats.kills >= soloStats.targetKills) {
+    if (soloStats.kills >= SOLO_TARGET_KILLS) {
       winSolo();
     }
   }
@@ -2093,7 +2095,7 @@ function dieLocal(killerName) {
     if (gameWinner) return;
     soloStats.deaths++;
     updateSoloScoreboard();
-    if (soloStats.deaths >= soloStats.targetDeaths) {
+    if (soloStats.deaths >= SOLO_TARGET_DEATHS) {
       loseSolo(killerName);
       return;
     }
@@ -2134,6 +2136,7 @@ function respawnBotNow() {
 function respawnLocal() {
   player.alive = true;
   player.hp = 100;
+  player.weapon = 'rifle';
   if (mode === MODE.PLAY_ONLINE) {
     player.pos.set(0, 0, net.isHost ? 25 : -25);
     player.yaw = net.isHost ? Math.PI : 0;
@@ -3105,4 +3108,4 @@ updateProgressUI();
 animate();
 </script>
 </body>
-   </html>
+ </html>
