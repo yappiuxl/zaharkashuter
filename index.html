@@ -55,12 +55,15 @@
     flex:1; position:relative;
     display:flex; align-items:center; justify-content:flex-end;
     padding-right: 48px; pointer-events:none;
+    overflow-y: auto;
+    max-height: 100vh;
   }
   .tabPanel {
     display:none; pointer-events:auto;
     flex-direction:column; gap:12px;
     max-width: 340px; width:100%;
     align-items: flex-end; text-align: right;
+    margin: 20px 0;
   }
   .tabPanel.active { display:flex; }
 
@@ -495,21 +498,48 @@
     background: rgba(0,0,0,0.85);
     display:none; flex-direction:column;
     align-items:center; justify-content:center;
-    gap:20px; color:#fff; backdrop-filter: blur(10px); text-align:center;
+    gap:14px; color:#fff; backdrop-filter: blur(10px); text-align:center;
+    padding: 20px;
   }
   #winOverlay.show { display:flex; }
   #winIcon { font-size: 80px; }
   #winTitle { font-size: 50px; font-weight: 900; letter-spacing: 5px; text-transform: uppercase; }
   #winScore { font-size: 24px; color: #aaa; }
   #winStats { font-size: 16px; color: #ffaa44; }
+
+  #statsTable {
+    display: none;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,136,68,0.3);
+    border-radius: 12px;
+    padding: 16px 22px;
+    margin: 10px 0;
+    min-width: 280px;
+    text-align: left;
+  }
+  #statsTable.show { display: block; }
+  #statsTable .row {
+    display: flex; justify-content: space-between;
+    font: 600 14px monospace;
+    color: #ccc;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  #statsTable .row:last-child { border-bottom: none; }
+  #statsTable .row .label { color: #7a8299; }
+  #statsTable .row .value { color: #fff; font-weight: 900; }
+  #statsTable .row .value.good { color: #4cff88; }
+  #statsTable .row .value.bad { color: #ff5555; }
+  #statsTable .row .value.gold { color: #ffaa44; }
+
   #winRestart {
-    margin-top:20px; padding: 14px 40px;
+    margin-top:10px; padding: 14px 40px;
     background: linear-gradient(135deg, #ff8844, #ff5522);
     border: none; border-radius: 12px; font: 900 18px sans-serif;
     cursor: pointer; color: #fff; box-shadow: 0 0 20px rgba(255,100,50,0.5);
   }
   #winMenu {
-    margin-top:10px; padding: 14px 40px;
+    margin-top:4px; padding: 14px 40px;
     background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
     border-radius: 12px; font: 900 18px sans-serif;
     cursor: pointer; color: #fff;
@@ -592,7 +622,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 2.2 · P2P<br>
+      ВЕРСИЯ 2.3 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -631,6 +661,13 @@
         <button class="menuBtn" id="layoutEditorBtn" style="margin-top:10px; background:rgba(80,180,255,0.3); border-color:rgba(120,200,255,0.6);">НАСТРОИТЬ РАСПОЛОЖЕНИЕ</button>
         <button class="menuBtn" id="saveSettingsBtn" style="margin-top:10px;">СОХРАНИТЬ</button>
         <button class="menuBtn" id="resetProgressBtn" style="margin-top:10px; background:rgba(255,60,60,0.3); border-color:rgba(255,100,100,0.6); color:#ff8888;">СБРОСИТЬ ПРОГРЕСС</button>
+
+        <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.1);">
+          <div style="font-size:11px; font-weight:800; letter-spacing:1.5px; color:#7a8299; margin-bottom:10px;">СОХРАНЕНИЕ / ПЕРЕНОС</div>
+          <button class="menuBtn" id="exportBtn" style="background:rgba(80,180,255,0.3); border-color:rgba(120,200,255,0.6);">📤 ЭКСПОРТ В ФАЙЛ</button>
+          <button class="menuBtn" id="importBtn" style="background:rgba(80,255,180,0.3); border-color:rgba(120,255,200,0.6); margin-top:8px;">📥 ИМПОРТ ИЗ ФАЙЛА</button>
+          <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
+        </div>
       </div>
     </div>
     <div class="tabPanel" id="panel-shop">
@@ -747,7 +784,15 @@
   <div id="winIcon">🏆</div>
   <h2 id="winTitle">ПОБЕДА</h2>
   <div id="winScore">Счёт: 10 - 5</div>
-  <div id="winStats">Убийств: 10 | Смертей: 5</div>
+  <div id="winStats">+30 XP</div>
+  <div id="statsTable">
+    <div class="row"><span class="label">УБИЙСТВ</span><span class="value good" id="msKills">0</span></div>
+    <div class="row"><span class="label">СМЕРТЕЙ</span><span class="value bad" id="msDeaths">0</span></div>
+    <div class="row"><span class="label">ХЕДШОТОВ</span><span class="value gold" id="msHeadshots">0</span></div>
+    <div class="row"><span class="label">ТОЧНОСТЬ</span><span class="value" id="msAccuracy">0%</span></div>
+    <div class="row"><span class="label">ЛУЧШАЯ СЕРИЯ</span><span class="value gold" id="msStreak">0</span></div>
+    <div class="row"><span class="label">ВРЕМЯ</span><span class="value" id="msTime">0:00</span></div>
+  </div>
   <button id="winRestart">РЕВАНШ</button>
   <button id="winMenu">В МЕНЮ</button>
 </div>
@@ -881,6 +926,88 @@ function saveSettings() {
   applySettingsToUI();
   alert('Настройки сохранены!');
 }
+
+/* ============================================================
+   ЭКСПОРТ / ИМПОРТ
+   ============================================================ */
+function exportProgress() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    xp: progress.xp,
+    sensitivity: userSettings.sensitivity,
+    opacity: userSettings.opacity,
+    layout: userSettings.layout,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const fname = `zaharka_save_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+  a.href = url;
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  showToast('✓ Экспортировано: ' + fname);
+}
+
+function importProgressFromFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (typeof data !== 'object' || data === null) throw new Error('bad json');
+      if (typeof data.xp !== 'number' || data.xp < 0) throw new Error('bad xp');
+
+      const ok = confirm(
+        `Импорт сохранения:\n` +
+        `XP: ${data.xp}\n` +
+        `Чувствительность: ${data.sensitivity ?? '—'}\n` +
+        `Прозрачность: ${data.opacity ?? '—'}%\n\n` +
+        `Текущий прогресс будет заменён. Продолжить?`
+      );
+      if (!ok) return;
+
+      progress.xp = Math.min(2000, Math.max(0, data.xp | 0));
+      localStorage.setItem('zs_xp', progress.xp);
+
+      if (typeof data.sensitivity === 'number' && data.sensitivity >= 0.2 && data.sensitivity <= 3) {
+        userSettings.sensitivity = data.sensitivity;
+        localStorage.setItem('zs_sens', userSettings.sensitivity);
+      }
+      if (typeof data.opacity === 'number' && data.opacity >= 20 && data.opacity <= 100) {
+        userSettings.opacity = data.opacity;
+        localStorage.setItem('zs_opacity', userSettings.opacity);
+      }
+      if (data.layout && data.layout.fire && data.layout.fire.xp !== undefined) {
+        userSettings.layout = data.layout;
+        localStorage.setItem('zs_layout', JSON.stringify(userSettings.layout));
+      }
+
+      applySettingsToUI();
+      updateProgressUI();
+      showToast('✓ Импорт успешён');
+    } catch (err) {
+      alert('Ошибка импорта: ' + err.message);
+    }
+  };
+  reader.onerror = () => alert('Не удалось прочитать файл');
+  reader.readAsText(file);
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportProgress);
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  importProgressFromFile(f);
+  e.target.value = '';
+});
 
 /* ============================================================
    РЕДАКТОР РАСКЛАДКИ
@@ -1265,6 +1392,50 @@ const soloStats = { kills: 0, deaths: 0 };
 const SOLO_TARGET_KILLS = 16;
 const SOLO_TARGET_DEATHS = 16;
 let dualRespawnToken = 0;
+
+const matchStats = {
+  kills: 0,
+  deaths: 0,
+  headshots: 0,
+  shotsFired: 0,
+  shotsHit: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+  startTime: 0,
+  active: false,
+};
+
+function resetMatchStats() {
+  matchStats.kills = 0;
+  matchStats.deaths = 0;
+  matchStats.headshots = 0;
+  matchStats.shotsFired = 0;
+  matchStats.shotsHit = 0;
+  matchStats.currentStreak = 0;
+  matchStats.bestStreak = 0;
+  matchStats.startTime = performance.now();
+  matchStats.active = true;
+}
+function fmtTime(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+function fillMatchStatsOverlay() {
+  const acc = matchStats.shotsFired > 0 ? Math.round(matchStats.shotsHit / matchStats.shotsFired * 100) : 0;
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('msKills', matchStats.kills);
+  set('msDeaths', matchStats.deaths);
+  set('msHeadshots', matchStats.headshots);
+  set('msAccuracy', acc + '%');
+  set('msStreak', matchStats.bestStreak);
+  set('msTime', fmtTime(performance.now() - matchStats.startTime));
+  const t = document.getElementById('statsTable');
+  if (t) t.classList.add('show');
+}
+function hideMatchStatsOverlay() {
+  const t = document.getElementById('statsTable');
+  if (t) t.classList.remove('show');
+}
 
 const PLAYER_HEIGHT = 1.6;
 const CROUCH_HEIGHT = 1.1;
@@ -1908,6 +2079,7 @@ function tryShoot() {
 
   player.lastShotTime = now;
   player.ammo[player.weapon]--;
+  matchStats.shotsFired++;
   updateAmmoUI();
 
   if (player.weapon === 'rifle') sounds.shot(0, 0.5);
@@ -1939,6 +2111,7 @@ function tryShoot() {
   if (!first) return;
   if (!first.object.userData || !first.object.userData.part) return;
 
+  matchStats.shotsHit++;
   const isHead = first.object.userData.part === 'head';
   const dmg = isHead ? stats.damageHead : stats.damageBody;
   showHitmarker(isHead);
@@ -1946,6 +2119,7 @@ function tryShoot() {
   if (isHead) sounds.headshot(0, 0.5); else sounds.hit(0, 0.5);
 
   if (mode === MODE.PLAY_SOLO && first.object.userData.isBot) {
+    if (isHead) matchStats.headshots++;
     bot.hp -= dmg;
     bot.lastDamaged = now;
     if (bot.hp <= 0 && bot.alive) killBot();
@@ -1964,6 +2138,10 @@ function killBot() {
   bot.group.position.y = -0.6;
   bot.respawnAt = performance.now() + 3000;
   showKillMsg('Ты', 'БОТ');
+
+  matchStats.kills++;
+  matchStats.currentStreak++;
+  if (matchStats.currentStreak > matchStats.bestStreak) matchStats.bestStreak = matchStats.currentStreak;
 
   if (mode === MODE.PLAY_SOLO && !gameWinner) {
     soloStats.kills++;
@@ -2093,6 +2271,9 @@ function dieLocal(killerName) {
   input.moveX = 0; input.moveY = 0;
   document.getElementById('deathKiller').textContent = killerName;
 
+  matchStats.deaths++;
+  matchStats.currentStreak = 0;
+
   if (mode === MODE.PLAY_SOLO) {
     if (gameWinner) return;
     soloStats.deaths++;
@@ -2191,6 +2372,7 @@ function winSolo() {
   player.alive = false;
   input.fire = false; input.moveX = 0; input.moveY = 0;
   dualRespawnToken++;
+  matchStats.active = false;
   const lvl = getLevel(progress.xp);
   const xp = getXpForWin(lvl);
   if (xp > 0) addXp(xp);
@@ -2200,6 +2382,7 @@ function winSolo() {
   document.getElementById('winTitle').style.color = '#00ff00';
   document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
   document.getElementById('winStats').textContent = `+${xp} XP`;
+  fillMatchStatsOverlay();
   document.getElementById('winOverlay').classList.add('show');
 }
 
@@ -2209,6 +2392,7 @@ function loseSolo(killerName) {
   player.alive = false;
   input.fire = false; input.moveX = 0; input.moveY = 0;
   dualRespawnToken++;
+  matchStats.active = false;
 
   document.getElementById('deathOverlay').classList.remove('show');
   document.getElementById('winIcon').textContent = '💀';
@@ -2216,6 +2400,7 @@ function loseSolo(killerName) {
   document.getElementById('winTitle').style.color = '#ff3333';
   document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
   document.getElementById('winStats').textContent = '0 XP';
+  fillMatchStatsOverlay();
   document.getElementById('winOverlay').classList.add('show');
 }
 
@@ -2671,6 +2856,9 @@ function handlePeerData(data) {
         net.guestScore++;
         showKillMsg(net.myName, net.otherName);
       }
+      matchStats.kills++;
+      matchStats.currentStreak++;
+      if (matchStats.currentStreak > matchStats.bestStreak) matchStats.bestStreak = matchStats.currentStreak;
       updateScoreboard();
       checkWinCondition();
       break;
@@ -2710,6 +2898,9 @@ function killGuest() {
     net.hostScore++;
     showKillMsg(net.myName, net.otherName);
   }
+  matchStats.kills++;
+  matchStats.currentStreak++;
+  if (matchStats.currentStreak > matchStats.bestStreak) matchStats.bestStreak = matchStats.currentStreak;
   updateScoreboard();
   checkWinCondition();
   if (!gameWinner) scheduleDualRespawn(3000);
@@ -2721,6 +2912,9 @@ function killHost() {
     net.guestScore++;
     showKillMsg(net.myName, net.otherName);
   }
+  matchStats.kills++;
+  matchStats.currentStreak++;
+  if (matchStats.currentStreak > matchStats.bestStreak) matchStats.bestStreak = matchStats.currentStreak;
   updateScoreboard();
   checkWinCondition();
   if (!gameWinner) scheduleDualRespawn(3000);
@@ -2748,6 +2942,7 @@ function enterOnlineGame(myX, myZ, otherX, otherZ, myYaw, otherYaw) {
   bot.group.visible = false;
   net.hostHp = 100; net.guestHp = 100;
 
+  resetMatchStats();
   menuEl.classList.add('hidden');
   document.getElementById('netModal').classList.remove('show');
   document.body.classList.add('ingame');
@@ -2781,12 +2976,14 @@ function checkWinCondition() {
   player.alive = false;
   input.fire = false; input.moveX = 0; input.moveY = 0;
   dualRespawnToken++;
+  matchStats.active = false;
   const isWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
   document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
   document.getElementById('winTitle').textContent = isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
   document.getElementById('winTitle').style.color = isWin ? '#00ff00' : '#ff3333';
   document.getElementById('winScore').textContent = `Счёт: ${net.hostScore} : ${net.guestScore}`;
   document.getElementById('winStats').textContent = '';
+  fillMatchStatsOverlay();
   document.getElementById('winOverlay').classList.add('show');
 }
 
@@ -2856,6 +3053,7 @@ function doStartSoloGame() {
   soloStats.kills = 0;
   soloStats.deaths = 0;
   dualRespawnToken++;
+  resetMatchStats();
 
   menuEl.classList.add('hidden');
   document.body.classList.add('ingame');
@@ -2916,6 +3114,7 @@ function exitToMenu() {
   menuEl.classList.remove('hidden');
   document.getElementById('deathOverlay').classList.remove('show');
   document.getElementById('winOverlay').classList.remove('show');
+  hideMatchStatsOverlay();
   document.getElementById('difficultyModal').style.display = 'none';
   mode = MODE.MENU;
   destroyPeer();
@@ -2923,6 +3122,7 @@ function exitToMenu() {
   soloStats.kills = 0;
   soloStats.deaths = 0;
   dualRespawnToken++;
+  matchStats.active = false;
   remotePlayer.group.visible = false;
   bot.group.visible = false;
   document.getElementById('otherHud').style.display = 'block';
@@ -2975,6 +3175,7 @@ document.getElementById('deathMenu').addEventListener('click', exitToMenu);
 document.getElementById('winMenu').addEventListener('click', exitToMenu);
 document.getElementById('winRestart').addEventListener('click', () => {
   document.getElementById('winOverlay').classList.remove('show');
+  hideMatchStatsOverlay();
   if (mode === MODE.PLAY_SOLO) {
     const lvl = getLevel(progress.xp);
     if (lvl >= 10) {
@@ -3135,4 +3336,4 @@ updateProgressUI();
 animate();
 </script>
 </body>
-</html>
+   </html>
