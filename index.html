@@ -475,6 +475,7 @@
     align-items:center; justify-content:center;
     gap:20px; color:#fff;
     backdrop-filter: blur(8px);
+    pointer-events: none;
   }
   #deathOverlay.show { display:flex; }
   #deathOverlay h2 {
@@ -484,14 +485,13 @@
   }
   #deathOverlay .stats { font-size:24px; color:#aaa; text-align:center; }
   #deathOverlay .stats b { color:#0f0; font-size:32px; }
-  #deathOverlay button {
-    padding:14px 40px; margin-top:10px;
-    background: linear-gradient(135deg, #ff8844, #ff5522);
-    border:none; border-radius:10px; color:#fff;
-    font:900 16px sans-serif; letter-spacing:3px;
-    cursor:pointer; box-shadow: 0 6px 20px rgba(255,100,50,0.4);
+  #respawnTimer {
+    font: bold 16px monospace;
+    color: #ffaa44;
+    letter-spacing: 3px;
+    margin-top: 10px;
+    text-shadow: 0 0 10px rgba(255,170,68,0.6);
   }
-  #deathOverlay button:active { transform:scale(0.97); }
 
   #winOverlay {
     position:fixed; inset:0; z-index:100;
@@ -622,7 +622,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 2.3 · P2P<br>
+      ВЕРСИЯ 2.4 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -777,7 +777,7 @@
 <div id="deathOverlay">
   <h2>ТЫ СДОХ</h2>
   <div class="stats" id="deathStats">Убит: <b id="deathKiller">-</b></div>
-  <button id="deathMenu">В МЕНЮ</button>
+  <div id="respawnTimer">РЕСПАВН ЧЕРЕЗ 3...</div>
 </div>
 
 <div id="winOverlay">
@@ -1392,6 +1392,7 @@ const soloStats = { kills: 0, deaths: 0 };
 const SOLO_TARGET_KILLS = 16;
 const SOLO_TARGET_DEATHS = 16;
 let dualRespawnToken = 0;
+let respawnCountdownId = null;
 
 const matchStats = {
   kills: 0,
@@ -1437,6 +1438,22 @@ function hideMatchStatsOverlay() {
   if (t) t.classList.remove('show');
 }
 
+function startRespawnCountdown(seconds) {
+  if (respawnCountdownId) clearInterval(respawnCountdownId);
+  const el = document.getElementById('respawnTimer');
+  let left = seconds;
+  if (el) el.textContent = `РЕСПАВН ЧЕРЕЗ ${left}...`;
+  respawnCountdownId = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      clearInterval(respawnCountdownId);
+      respawnCountdownId = null;
+      return;
+    }
+    if (el) el.textContent = `РЕСПАВН ЧЕРЕЗ ${left}...`;
+  }, 1000);
+}
+
 const PLAYER_HEIGHT = 1.6;
 const CROUCH_HEIGHT = 1.1;
 const GRAVITY = -22;
@@ -1450,8 +1467,12 @@ const TICK_MS = 1000 / TICK_RATE;
 const WEAPON_STATS = {
   rifle:   { magSize: 30, reloadTime: 3000, damageBody: 20, damageHead: 80, fireRate: 110 },
   shotgun: { magSize: 8,  reloadTime: 3000, damageBody: 40, damageHead: 140, fireRate: 800 },
-  sniper:  { magSize: 5,  reloadTime: 3000, damageBody: 400, damageHead: 500, fireRate: 1500 }
+  sniper:  { magSize: 5,  reloadTime: 3000, damageBody: 400, damageHead: 500, fireRate: 1500 },
+  knife:   { magSize: 1,  reloadTime: 0,    damageBody: 9999, damageHead: 9999, fireRate: 600 }
 };
+
+const KNIFE_RANGE = 2.0;
+const KNIFE_ANGLE = Math.PI / 6;
 
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3 };
 const BOT_SIGHT_DIST = 65, BOT_ATTACK_DIST = 25, BOT_FOV = Math.PI * 0.85;
@@ -1485,7 +1506,8 @@ const sounds = {
   hit: createTone(300, 0.05, 'sine'),
   explode: createTone(60, 0.4, 'sawtooth'),
   headshot: createTone(600, 0.1, 'sine'),
-  reload: createTone(400, 0.15, 'triangle')
+  reload: createTone(400, 0.15, 'triangle'),
+  knife: createTone(220, 0.15, 'square')
 };
 
 /* ИНИЦИАЛИЗАЦИЯ */
@@ -1522,7 +1544,7 @@ function initScene() {
     vy: 0, yaw: Math.PI, pitch: 0,
     hp: 100, alive: true, onGround: true,
     weapon: 'rifle', grenades: 1, lastGrenadeTime: 0,
-    ammo: { rifle: 30, shotgun: 8, sniper: 5 },
+    ammo: { rifle: 30, shotgun: 8, sniper: 5, knife: 1 },
     isReloading: false, reloadEndTime: 0,
     isCrouching: false, isScoped: false,
     lastShotTime: 0, inspecting: false, inspectEndTime: 0
@@ -1539,8 +1561,9 @@ function initScene() {
   weaponModels.rifle = createWeaponModel('rifle');
   weaponModels.shotgun = createWeaponModel('shotgun');
   weaponModels.sniper = createWeaponModel('sniper');
+  weaponModels.knife = createWeaponModel('knife');
   weaponModels.grenade = createWeaponModel('grenade');
-  camera.add(weaponModels.rifle, weaponModels.shotgun, weaponModels.sniper, weaponModels.grenade);
+  camera.add(weaponModels.rifle, weaponModels.shotgun, weaponModels.sniper, weaponModels.knife, weaponModels.grenade);
   scene.add(camera);
 
   setWeaponVisible('rifle');
@@ -1726,6 +1749,17 @@ function createWeaponModel(type) {
     barrel.rotation.x = Math.PI/2; barrel.position.set(0.22, -0.21, -1.0); g.add(barrel);
     const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.25, 10), metalMat);
     scope.rotation.x = Math.PI/2; scope.position.set(0.22, -0.1, -0.32); g.add(scope);
+  } else if (type === 'knife') {
+    const bladeMat = new THREE.MeshStandardMaterial({ color:0xd8d8e0, roughness:0.15, metalness:0.95 });
+    const handleMat = new THREE.MeshStandardMaterial({ color:0x2a1a0a, roughness:0.7 });
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.04, 0.28), bladeMat);
+    blade.position.set(0.22, -0.20, -0.42); blade.rotation.x = 0.15; g.add(blade);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.08, 4), bladeMat);
+    tip.rotation.x = -Math.PI/2; tip.position.set(0.22, -0.18, -0.6); g.add(tip);
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.13), handleMat);
+    handle.position.set(0.22, -0.22, -0.24); g.add(handle);
+    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 0.02), metalMat);
+    guard.position.set(0.22, -0.21, -0.31); g.add(guard);
   } else if (type === 'grenade') {
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), new THREE.MeshStandardMaterial({ color:0x2a3a1a, roughness:0.6 }));
     body.position.set(0.22, -0.22, -0.35); body.scale.set(1, 1.2, 1); g.add(body);
@@ -1977,7 +2011,7 @@ swapBtn.addEventListener('touchstart', e => {
     player.isScoped = false;
     document.getElementById('zoomBtn').classList.remove('active');
 
-    const cycle = ['rifle', 'shotgun', 'sniper', 'grenade'];
+    const cycle = ['rifle', 'shotgun', 'sniper', 'knife', 'grenade'];
     const idx = cycle.indexOf(player.weapon);
     player.weapon = cycle[(idx + 1) % cycle.length];
     setWeaponVisible(player.weapon);
@@ -2012,7 +2046,7 @@ fireBtn.addEventListener('mouseup',    () => input.fire = false);
 fireBtn.addEventListener('mouseleave', () => input.fire = false);
 
 function handleReload() {
-  if (player.weapon === 'grenade' || player.isReloading || player.inspecting) return;
+  if (player.weapon === 'grenade' || player.weapon === 'knife' || player.isReloading || player.inspecting) return;
   const stats = WEAPON_STATS[player.weapon];
   if (player.ammo[player.weapon] === stats.magSize) {
     player.inspecting = true;
@@ -2029,6 +2063,11 @@ function updateAmmoUI() {
   if (!player) return;
   if (player.weapon === 'grenade') {
     ammoEl.textContent = `ГРАНАТА: ${player.grenades}`;
+    ammoEl.classList.remove('reloading');
+    return;
+  }
+  if (player.weapon === 'knife') {
+    ammoEl.textContent = 'НОЖ · ∞';
     ammoEl.classList.remove('reloading');
     return;
   }
@@ -2051,9 +2090,76 @@ function showHitmarker(isHead) {
   setTimeout(() => ch.classList.remove('hit-body', 'hit-head'), 200);
 }
 
+/* ========== НОЖ ========== */
+function tryKnifeAttack() {
+  if (!player.alive || player.isReloading || player.inspecting) return;
+  const now = performance.now();
+  if (now - player.lastShotTime < WEAPON_STATS.knife.fireRate) return;
+  player.lastShotTime = now;
+  sounds.knife(0, 0.7);
+
+  const origin = camera.position.clone();
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward);
+
+  let hitSomething = false;
+
+  // 1) Проверка бота
+  if (mode === MODE.PLAY_SOLO && bot.alive) {
+    const bp = bot.group.position.clone();
+    bp.y += 1.0;
+    const toBot = bp.clone().sub(origin);
+    const dist = toBot.length();
+    if (dist <= KNIFE_RANGE + 1.0) {
+      const toBotFlat = new THREE.Vector3(toBot.x, 0, toBot.z).normalize();
+      const fwdFlat = new THREE.Vector3(forward.x, 0, forward.z).normalize();
+      const angle = Math.acos(Math.max(-1, Math.min(1, toBotFlat.dot(fwdFlat))));
+      if (angle <= KNIFE_ANGLE || dist < 1.5) {
+        hitSomething = true;
+        showHitmarker(true);
+        spawnBlood(bp);
+        if (bot.alive) killBot();
+      }
+    }
+  }
+
+  // 2) Проверка игрока в сети
+  if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible) {
+    const rp = remotePlayer.group.position.clone();
+    rp.y += 1.0;
+    const toRp = rp.clone().sub(origin);
+    const dist = toRp.length();
+    if (dist <= KNIFE_RANGE + 1.0) {
+      const toRpFlat = new THREE.Vector3(toRp.x, 0, toRp.z).normalize();
+      const fwdFlat = new THREE.Vector3(forward.x, 0, forward.z).normalize();
+      const angle = Math.acos(Math.max(-1, Math.min(1, toRpFlat.dot(fwdFlat))));
+      if (angle <= KNIFE_ANGLE || dist < 1.5) {
+        hitSomething = true;
+        showHitmarker(true);
+        spawnBlood(rp);
+        if (net.conn && net.connected) {
+          net.conn.send({ t:'dmg', dmg: 9999, head: true });
+        }
+      }
+    }
+  }
+
+  if (!hitSomething) {
+    // Взмах в пустоту — визуал
+    const end = origin.clone().add(forward.clone().multiplyScalar(KNIFE_RANGE));
+    spawnTracer(origin.clone().add(forward.clone().multiplyScalar(0.5)), end, 0xddddff);
+  }
+}
+
 /* ========== СТРЕЛЬБА ========== */
 function tryShoot() {
   if (!player.alive || player.isReloading || player.inspecting) return;
+
+  if (player.weapon === 'knife') {
+    tryKnifeAttack();
+    return;
+  }
+
   const now = performance.now();
 
   if (player.weapon === 'grenade') {
@@ -2275,7 +2381,7 @@ function dieLocal(killerName) {
   matchStats.currentStreak = 0;
 
   if (mode === MODE.PLAY_SOLO) {
-    if (gameWinner) return;
+    if (gameWinner) { document.getElementById('deathOverlay').classList.remove('show'); return; }
     soloStats.deaths++;
     updateSoloScoreboard();
     if (soloStats.deaths >= SOLO_TARGET_DEATHS) {
@@ -2283,11 +2389,13 @@ function dieLocal(killerName) {
       return;
     }
     document.getElementById('deathOverlay').classList.add('show');
+    startRespawnCountdown(3);
     scheduleDualRespawn(3000);
     return;
   }
 
   document.getElementById('deathOverlay').classList.add('show');
+  startRespawnCountdown(3);
   if (net.isHost) net.hostDeaths++;
   else net.guestDeaths++;
   if (net.conn && net.connected) {
@@ -2301,6 +2409,7 @@ function scheduleDualRespawn(delayMs) {
   setTimeout(() => {
     if (myToken !== dualRespawnToken) return;
     if (gameWinner) return;
+    if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
     if (mode === MODE.PLAY_SOLO) {
       document.getElementById('deathOverlay').classList.remove('show');
       respawnLocal();
@@ -2345,7 +2454,7 @@ function respawnLocal() {
     player.pos.set(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z);
     player.yaw = Math.PI;
   }
-  player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
+  player.ammo = { rifle: 30, shotgun: 8, sniper: 5, knife: 1 };
   player.grenades = 1;
   player.vy = 0; player.onGround = true;
   player.isCrouching = false;
@@ -2372,6 +2481,7 @@ function winSolo() {
   player.alive = false;
   input.fire = false; input.moveX = 0; input.moveY = 0;
   dualRespawnToken++;
+  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   matchStats.active = false;
   const lvl = getLevel(progress.xp);
   const xp = getXpForWin(lvl);
@@ -2392,6 +2502,7 @@ function loseSolo(killerName) {
   player.alive = false;
   input.fire = false; input.moveX = 0; input.moveY = 0;
   dualRespawnToken++;
+  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   matchStats.active = false;
 
   document.getElementById('deathOverlay').classList.remove('show');
@@ -2930,7 +3041,7 @@ function enterOnlineGame(myX, myZ, otherX, otherZ, myYaw, otherYaw) {
   player.vy = 0; player.yaw = myYaw; player.pitch = 0;
   player.hp = 100; player.alive = true;
   player.weapon = 'rifle';
-  player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
+  player.ammo = { rifle: 30, shotgun: 8, sniper: 5, knife: 1 };
   player.grenades = 1;
   player.isCrouching = false;
   player.isReloading = false;
@@ -2976,6 +3087,7 @@ function checkWinCondition() {
   player.alive = false;
   input.fire = false; input.moveX = 0; input.moveY = 0;
   dualRespawnToken++;
+  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   matchStats.active = false;
   const isWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
   document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
@@ -3053,6 +3165,7 @@ function doStartSoloGame() {
   soloStats.kills = 0;
   soloStats.deaths = 0;
   dualRespawnToken++;
+  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   resetMatchStats();
 
   menuEl.classList.add('hidden');
@@ -3067,7 +3180,7 @@ function doStartSoloGame() {
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
   player.hp = 100; player.alive = true;
   player.weapon = 'rifle'; player.grenades = 1;
-  player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
+  player.ammo = { rifle: 30, shotgun: 8, sniper: 5, knife: 1 };
   player.isReloading = false; player.isCrouching = false; player.isScoped = false;
   player.inspecting = false;
   setWeaponVisible('rifle');
@@ -3116,6 +3229,7 @@ function exitToMenu() {
   document.getElementById('winOverlay').classList.remove('show');
   hideMatchStatsOverlay();
   document.getElementById('difficultyModal').style.display = 'none';
+  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   mode = MODE.MENU;
   destroyPeer();
   gameWinner = null;
@@ -3171,7 +3285,6 @@ document.getElementById('hostCancelBtn').addEventListener('click', () => {
   destroyPeer();
   showView('netStartView');
 });
-document.getElementById('deathMenu').addEventListener('click', exitToMenu);
 document.getElementById('winMenu').addEventListener('click', exitToMenu);
 document.getElementById('winRestart').addEventListener('click', () => {
   document.getElementById('winOverlay').classList.remove('show');
@@ -3336,4 +3449,4 @@ updateProgressUI();
 animate();
 </script>
 </body>
-   </html>
+           </html>
