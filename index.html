@@ -1733,12 +1733,12 @@ function createWeaponModel(type) {
   const forearmMat = new THREE.MeshStandardMaterial({ color: 0xd8a880, roughness: 0.8, metalness: 0.0 });
 
   const forearm = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.055, 0.07, 0.45, 10),
+    new THREE.CylinderGeometry(0.055, 0.07, 0.55, 10),
     forearmMat
   );
   forearm.rotation.x = Math.PI / 2;
   forearm.rotation.z = -0.12;
-  forearm.position.set(0.24, -0.30, -0.02);
+  forearm.position.set(0.24, -0.34, 0.05); // локоть ниже-ближе к камере
   g.add(forearm);
 
   const fist = new THREE.Mesh(
@@ -3389,18 +3389,37 @@ function animate() {
     }
     const activeModel = weaponModels[player.weapon];
     if (activeModel) {
-      const pivot = activeModel.userData.pivotPoint || new THREE.Vector3(0.22, -0.26, -0.30);
+      const pivot = activeModel.userData.pivotPoint || new THREE.Vector3(0.22, -0.30, 0.0);
       if (player.inspecting) {
-        const t = now * 0.0025;
-        const angle = t;
+        // 1. Выезд в центр экрана (первые 0.3с), потом вращение (2.5с), потом возврат
+        const elapsed = (player.inspectEndTime - now);
+        const total = 2500;
+        const tProg = 1 - Math.max(0, elapsed / total); // 0..1
+        let lift = 0;
+        if (tProg < 0.15) lift = tProg / 0.15;
+        else if (tProg > 0.85) lift = (1 - tProg) / 0.15;
+        else lift = 1;
+
+        const targetX = -0.22;
+        const targetY = 0.30;
+        const targetZ = -0.05;
+
+        const angle = (now * 0.0025) % (Math.PI * 2);
+
         activeModel.rotation.y = angle;
-        activeModel.position.set(
-          pivot.x - (pivot.x * Math.cos(angle) - pivot.z * Math.sin(angle)),
-          0,
-          pivot.z - (pivot.x * Math.sin(angle) + pivot.z * Math.cos(angle))
-        );
         activeModel.rotation.x = 0;
         activeModel.rotation.z = 0;
+
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+        const dx = pivot.x - (pivot.x * cosA - pivot.z * sinA);
+        const dz = pivot.z - (pivot.x * sinA + pivot.z * cosA);
+
+        activeModel.position.set(
+          dx + targetX * lift,
+          targetY * lift,
+          dz + targetZ * lift
+        );
       } else {
         activeModel.rotation.y = 0;
         activeModel.rotation.x = 0;
