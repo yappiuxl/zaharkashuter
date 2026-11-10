@@ -11,7 +11,6 @@
   #game { position:fixed; inset:0; z-index:1; }
   canvas { display:block; }
 
-  /* ============ МЕНЮ ============ */
   #menu {
     position:fixed; inset:0; z-index:100;
     display:flex; flex-direction:row; color:#fff;
@@ -115,7 +114,6 @@
     background: linear-gradient(135deg, rgba(80,180,255,0.7), rgba(40,120,200,0.7));
   }
 
-  /* Прогресс в меню */
   #progressBox {
     background: rgba(0,0,0,0.5);
     border: 1px solid rgba(255,136,68,0.3);
@@ -146,7 +144,6 @@
     font-family: monospace;
   }
 
-  /* ============ НАСТРОЙКИ ============ */
   .settingsPanel {
     background: rgba(0,0,0,0.7);
     padding: 24px;
@@ -170,7 +167,6 @@
     accent-color: #ff8844;
   }
 
-  /* ============ РЕДАКТОР КНОПОК ============ */
   #layoutEditor {
     position: fixed; inset: 0; z-index: 300;
     background: rgba(0,0,0,0.85);
@@ -202,7 +198,6 @@
     transform: translate(-50%, -50%);
   }
 
-  /* ============ МОДАЛКА ОНЛАЙН ============ */
   #netModal {
     position:fixed; inset:0; z-index:150;
     background: rgba(0,0,0,0.92);
@@ -325,7 +320,6 @@
   .netView { display: none; }
   .netView.show { display: block; }
 
-  /* ============ ИГРОВОЙ UI ============ */
   :root { --btn-opacity: 1; }
 
   #stickL {
@@ -346,7 +340,7 @@
   #leftHalf  { position:fixed; top:0; left:0;  bottom:0; width:50%; z-index:5; touch-action:none; }
 
   #leftHalf, #rightHalf, #stickL, #fire, #jump, #hud, #crosshair, #netBadge, #otherHud, #exitBtn, #killfeed, #swapBtn, #grenadeBtn, #scoreboard, #ammoHud, #reloadBtn, #crouchBtn, #zoomBtn { display:none; }
-  
+
   body.ingame #leftHalf, body.ingame #rightHalf { display:block; }
   body.ingame #stickL, body.ingame #fire, body.ingame #jump, body.ingame #swapBtn, body.ingame #reloadBtn, body.ingame #crouchBtn, body.ingame #zoomBtn { display:flex; }
   body.ingame #hud, body.ingame #crosshair, body.ingame #netBadge, body.ingame #exitBtn, body.ingame #ammoHud { display:block; }
@@ -495,7 +489,6 @@
   }
   #deathOverlay button:active { transform:scale(0.97); }
 
-  /* Модалка победы */
   #winOverlay {
     position:fixed; inset:0; z-index:100;
     background: rgba(0,0,0,0.85);
@@ -521,7 +514,6 @@
     cursor: pointer; color: #fff;
   }
 
-  /* HP Bar над врагом */
   .enemy-hp-bar {
     position: fixed; width: 60px; height: 6px;
     background: #333; border-radius: 3px; transform: translate(-50%, -50%);
@@ -530,7 +522,6 @@
   .enemy-hp-bar.show { display: block; }
   .enemy-hp-fill { height: 100%; background: #ff3333; width: 100%; transition: width 0.2s; }
 
-  /* Scope */
   #scopeOverlay {
     position: fixed; inset: 0; pointer-events: none; z-index: 1000;
     display: none; justify-content: center; align-items: center;
@@ -548,7 +539,6 @@
   #scopeCircle::before { left: 50%; top: 0; bottom: 0; width: 2px; }
   #scopeCircle::after  { top: 50%; left: 0; right: 0; height: 2px; }
 
-  /* Win toasts */
   #toastContainer {
     position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
     z-index: 200; pointer-events: none;
@@ -588,7 +578,6 @@
 
 <div id="game"></div>
 
-<!-- ================= МЕНЮ ================= -->
 <div id="menu">
   <div id="menuSide">
     <div id="menuHeader">
@@ -653,7 +642,6 @@
   </div>
 </div>
 
-<!-- ================= РЕДАКТОР КНОПОК ================= -->
 <div id="layoutEditor">
   <div id="layoutHeader">
     <div style="color:#fff; font-weight: bold; text-shadow: 0 0 5px #000; font-size: 18px;">Настройка кнопок</div>
@@ -663,7 +651,6 @@
   <div id="layoutContainer" style="position:absolute; inset:0;"></div>
 </div>
 
-<!-- ================= МОДАЛКА ВЫБОРА СЛОЖНОСТИ (10 уровень) ================= -->
 <div id="difficultyModal" style="position:fixed; inset:0; z-index:150; background:rgba(0,0,0,0.92); display:none; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(10px);">
   <div style="background: linear-gradient(135deg, #1a1f2e 0%, #0d1018 100%); border: 1px solid rgba(255,136,68,0.3); border-radius: 16px; max-width: 460px; width: 100%; padding: 24px; color:#fff;">
     <h2 style="text-align:center; color:#ff8844; margin-bottom: 16px; font-weight: 900; letter-spacing: 2px;">ВЫБЕРИ СЛОЖНОСТЬ</h2>
@@ -673,7 +660,6 @@
   </div>
 </div>
 
-<!-- ================= МОДАЛКА ОНЛАЙН ================= -->
 <div id="netModal">
   <div id="netPanel">
     <button class="netClose" id="netClose">✕</button>
@@ -725,7 +711,6 @@
   </div>
 </div>
 
-<!-- ================= ИГРОВОЙ UI ================= -->
 <div id="crosshair"></div>
 <div id="damageFlash"></div>
 <div id="leftHalf"></div>
@@ -777,9 +762,6 @@
 <script type="module">
 import * as THREE from 'three';
 
-/* ============================================================
-   НАСТРОЙКИ СЕТИ
-   ============================================================ */
 const PEER_HOST = 'zaharkashuter.onrender.com';
 const PEER_PORT = 443;
 const PEER_PATH = '/';
@@ -795,34 +777,25 @@ const RANKS = [
   'Zaharka Lite', 'Zaharka', 'True Zaharka'
 ];
 
-const progress = {
-  xp: parseInt(localStorage.getItem('zs_xp')) || 0,
-};
+const progress = { xp: parseInt(localStorage.getItem('zs_xp')) || 0 };
 
 function getLevel(xp) {
-  for (let i = LEVELS.length - 1; i >= 0; i--) {
-    if (xp >= LEVELS[i]) return i;
-  }
+  for (let i = LEVELS.length - 1; i >= 0; i--) if (xp >= LEVELS[i]) return i;
   return 0;
 }
-
 function getXpForWin(level) {
   if (level >= 10) return 0;
   const map = [30, 25, 20, 15, 15, 15, 15, 15, 15, 10];
   return map[level];
 }
-
 function addXp(amount) {
   const oldLevel = getLevel(progress.xp);
   progress.xp = Math.min(2000, progress.xp + amount);
   const newLevel = getLevel(progress.xp);
   localStorage.setItem('zs_xp', progress.xp);
   updateProgressUI();
-  if (newLevel > oldLevel) {
-    showToast(`🎉 УРОВЕНЬ ${newLevel}! ${RANKS[newLevel]}`);
-  }
+  if (newLevel > oldLevel) showToast(`🎉 УРОВЕНЬ ${newLevel}! ${RANKS[newLevel]}`);
 }
-
 function updateProgressUI() {
   const lvl = getLevel(progress.xp);
   document.getElementById('lvlNum').textContent = lvl;
@@ -834,7 +807,6 @@ function updateProgressUI() {
   document.getElementById('xpCur').textContent = progress.xp;
   document.getElementById('xpMax').textContent = 2000;
 }
-
 function showToast(text) {
   const el = document.createElement('div');
   el.className = 'toast';
@@ -842,7 +814,6 @@ function showToast(text) {
   document.getElementById('toastContainer').appendChild(el);
   setTimeout(() => el.remove(), 3000);
 }
-
 document.getElementById('resetProgressBtn').addEventListener('click', () => {
   if (confirm('Точно сбросить прогресс? Уровень и XP обнулятся.')) {
     progress.xp = 0;
@@ -853,21 +824,27 @@ document.getElementById('resetProgressBtn').addEventListener('click', () => {
 });
 
 /* ============================================================
-   НАСТРОЙКИ И РАСКЛАДКА
+   НАСТРОЙКИ И РАСКЛАДКА (в процентах — не зависит от resize)
    ============================================================ */
-const defaultLayout = {
-  fire: { x: window.innerWidth - 100, y: window.innerHeight - 250, size: 110 },
-  jump: { x: window.innerWidth - 100, y: window.innerHeight - 110, size: 100 },
-  swapBtn: { x: window.innerWidth - 220, y: window.innerHeight - 110, size: 80 },
-  reloadBtn: { x: window.innerWidth - 310, y: window.innerHeight - 110, size: 80 },
-  crouchBtn: { x: window.innerWidth - 100, y: window.innerHeight - 340, size: 80 },
-  zoomBtn: { x: window.innerWidth - 310, y: window.innerHeight - 200, size: 80 },
-};
+function makeDefaultLayout() {
+  const W = window.innerWidth, H = window.innerHeight;
+  return {
+    fire:      { xp: (W - 100) / W, yp: (H - 250) / H, size: 110 },
+    jump:      { xp: (W - 100) / W, yp: (H - 110) / H, size: 100 },
+    swapBtn:   { xp: (W - 220) / W, yp: (H - 110) / H, size: 80 },
+    reloadBtn: { xp: (W - 310) / W, yp: (H - 110) / H, size: 80 },
+    crouchBtn: { xp: (W - 100) / W, yp: (H - 340) / H, size: 80 },
+    zoomBtn:   { xp: (W - 310) / W, yp: (H - 200) / H, size: 80 },
+  };
+}
 
+const storedLayout = JSON.parse(localStorage.getItem('zs_layout') || 'null');
 const userSettings = {
   sensitivity: parseFloat(localStorage.getItem('zs_sens')) || 1.0,
   opacity: parseInt(localStorage.getItem('zs_opacity')) || 100,
-  layout: JSON.parse(localStorage.getItem('zs_layout')) || defaultLayout
+  layout: (storedLayout && storedLayout.fire && storedLayout.fire.xp !== undefined)
+    ? storedLayout
+    : makeDefaultLayout(),
 };
 
 const LOOK_SENS_BASE = 0.006;
@@ -882,22 +859,20 @@ function applySettingsToUI() {
   document.getElementById('opacityInput').value = userSettings.opacity;
   applyLayoutToGame();
 }
-
 function applyLayoutToGame() {
+  const W = window.innerWidth, H = window.innerHeight;
   const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'crouchBtn', 'zoomBtn'];
   btns.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const conf = userSettings.layout[id];
-    if (conf) {
-      el.style.left = conf.x + 'px';
-      el.style.top = conf.y + 'px';
-      el.style.width = conf.size + 'px';
-      el.style.height = conf.size + 'px';
-    }
+    if (!conf) return;
+    el.style.left = (conf.xp * W) + 'px';
+    el.style.top = (conf.yp * H) + 'px';
+    el.style.width = conf.size + 'px';
+    el.style.height = conf.size + 'px';
   });
 }
-
 function saveSettings() {
   userSettings.sensitivity = parseFloat(document.getElementById('sensInput').value);
   userSettings.opacity = parseInt(document.getElementById('opacityInput').value);
@@ -913,12 +888,13 @@ function saveSettings() {
 let isEditingLayout = false;
 const layoutContainer = document.getElementById('layoutContainer');
 const layoutEditor = document.getElementById('layoutEditor');
-const dragState = { el: null, id: null, startX: 0, startY: 0, startLeft: 0, startTop: 0, pointers: new Set(), startDist: 0, startSize: 0 };
+const dragState = { el: null, id: null, startX: 0, startY: 0, startXP: 0, startYP: 0, pointers: new Set(), startDist: 0, startSize: 0 };
 
 document.getElementById('layoutEditorBtn').addEventListener('click', () => {
   isEditingLayout = true;
   layoutEditor.classList.add('show');
   layoutContainer.innerHTML = '';
+  const W = window.innerWidth, H = window.innerHeight;
   const btns = ['fire', 'jump', 'swapBtn', 'reloadBtn', 'crouchBtn', 'zoomBtn'];
   btns.forEach(id => {
     const conf = userSettings.layout[id];
@@ -932,8 +908,8 @@ document.getElementById('layoutEditorBtn').addEventListener('click', () => {
     if (id === 'reloadBtn') { el.style.background = 'rgba(180,180,180,0.3)'; el.style.border = '3px solid rgba(220,220,220,0.85)'; }
     if (id === 'crouchBtn') { el.style.background = 'rgba(200,80,200,0.3)'; el.style.border = '3px solid rgba(255,120,255,0.85)'; }
     if (id === 'zoomBtn') { el.style.background = 'rgba(80,255,180,0.3)'; el.style.border = '3px solid rgba(120,255,200,0.85)'; }
-    el.style.left = conf.x + 'px';
-    el.style.top = conf.y + 'px';
+    el.style.left = (conf.xp * W) + 'px';
+    el.style.top = (conf.yp * H) + 'px';
     el.style.width = conf.size + 'px';
     el.style.height = conf.size + 'px';
     el.style.fontSize = (conf.size / 5) + 'px';
@@ -954,42 +930,44 @@ document.getElementById('layoutSaveBtn').addEventListener('click', () => {
 
 const pointerPos = {};
 document.addEventListener('pointerdown', e => { pointerPos[e.pointerId] = {x: e.clientX, y: e.clientY}; });
-document.addEventListener('pointermove', e => { pointerPos[e.pointerId] = {x: e.clientX, y: e.clientY}; });
+document.addEventListener('pointermove', e => { if (pointerPos[e.pointerId]) { pointerPos[e.pointerId].x = e.clientX; pointerPos[e.pointerId].y = e.clientY; } });
 document.addEventListener('pointerup', e => { delete pointerPos[e.pointerId]; });
 
 function handlePointerDown(e) {
   const el = e.currentTarget;
   const id = el.id.replace('edit_', '');
-  el.setPointerCapture(e.pointerId);
+  try { el.setPointerCapture(e.pointerId); } catch(_) {}
   dragState.pointers.add(e.pointerId);
   if (dragState.pointers.size === 1) {
     dragState.el = el; dragState.id = id;
     dragState.startX = e.clientX; dragState.startY = e.clientY;
-    dragState.startLeft = userSettings.layout[id].x;
-    dragState.startTop = userSettings.layout[id].y;
+    dragState.startXP = userSettings.layout[id].xp;
+    dragState.startYP = userSettings.layout[id].yp;
   } else if (dragState.pointers.size === 2) {
     dragState.el = el; dragState.id = id;
     dragState.startDist = 0;
     dragState.startSize = userSettings.layout[id].size;
   }
 }
-
 function handlePointerMove(e) {
   if (!isEditingLayout) return;
   const el = e.currentTarget;
   const id = el.id.replace('edit_', '');
+  const W = window.innerWidth, H = window.innerHeight;
   if (dragState.pointers.size === 1 && dragState.el === el) {
     const dx = e.clientX - dragState.startX;
     const dy = e.clientY - dragState.startY;
-    let newX = dragState.startLeft + dx;
-    let newY = dragState.startTop + dy;
-    const halfSize = userSettings.layout[id].size / 2;
-    newX = Math.max(halfSize, Math.min(window.innerWidth - halfSize, newX));
-    newY = Math.max(halfSize, Math.min(window.innerHeight - halfSize, newY));
-    userSettings.layout[id].x = newX;
-    userSettings.layout[id].y = newY;
-    el.style.left = newX + 'px';
-    el.style.top = newY + 'px';
+    const size = userSettings.layout[id].size;
+    const halfX = size / 2 / W;
+    const halfY = size / 2 / H;
+    let newXP = dragState.startXP + dx / W;
+    let newYP = dragState.startYP + dy / H;
+    newXP = Math.max(halfX, Math.min(1 - halfX, newXP));
+    newYP = Math.max(halfY, Math.min(1 - halfY, newYP));
+    userSettings.layout[id].xp = newXP;
+    userSettings.layout[id].yp = newYP;
+    el.style.left = (newXP * W) + 'px';
+    el.style.top = (newYP * H) + 'px';
   } else if (dragState.pointers.size === 2 && dragState.el === el) {
     const pIds = Array.from(dragState.pointers);
     if (pointerPos[pIds[0]] && pointerPos[pIds[1]]) {
@@ -1007,7 +985,6 @@ function handlePointerMove(e) {
     }
   }
 }
-
 function handlePointerUp(e) {
   dragState.pointers.delete(e.pointerId);
   if (dragState.pointers.size === 0) { dragState.el = null; dragState.id = null; }
@@ -1015,7 +992,7 @@ function handlePointerUp(e) {
 }
 
 /* ============================================================
-   ТЕКСТУРЫ SANDSTONE
+   ТЕКСТУРЫ
    ============================================================ */
 function makeSandstoneTexture() {
   const size = 512;
@@ -1083,7 +1060,6 @@ function makeSandstoneTexture() {
   t.anisotropy = 8;
   return t;
 }
-
 function makeSandFloorTexture() {
   const size = 512;
   const canvas = document.createElement('canvas');
@@ -1108,7 +1084,6 @@ function makeSandFloorTexture() {
   t.anisotropy = 8;
   return t;
 }
-
 function makeWoodTexture() {
   const size = 256;
   const canvas = document.createElement('canvas');
@@ -1129,7 +1104,6 @@ function makeWoodTexture() {
   t.anisotropy = 8;
   return t;
 }
-
 function makeRoofTexture() {
   const size = 256;
   const canvas = document.createElement('canvas');
@@ -1166,7 +1140,6 @@ const MAT = {
   wall: new THREE.MeshStandardMaterial({ map: sandstoneTex, roughness: 0.9 }),
   floor: new THREE.MeshStandardMaterial({ map: sandFloorTex, roughness: 1.0 }),
   crate: new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.85 }),
-  crateEdge: new THREE.MeshStandardMaterial({ color: 0x6a5a4a, roughness: 0.8 }),
   platform: new THREE.MeshStandardMaterial({ map: sandstoneTex, roughness: 0.9 }),
   barrel: new THREE.MeshStandardMaterial({ color: 0x8b6a3a, roughness: 0.8, metalness: 0.2 }),
   barrelRing: new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.4 }),
@@ -1175,23 +1148,22 @@ const MAT = {
   parapet: new THREE.MeshStandardMaterial({ map: sandstoneTex, roughness: 0.9, color: 0xbbbbbb }),
   stair: new THREE.MeshStandardMaterial({ map: sandstoneTex, roughness: 0.9, color: 0xaaaaaa }),
   innerFloor: new THREE.MeshStandardMaterial({ map: sandFloorTex, roughness: 1.0, color: 0xcccccc }),
-  trim: new THREE.MeshStandardMaterial({ color: 0x8a7a6a, roughness: 0.9 }),
 };
 
 /* ============================================================
-   СЛОЖНОСТЬ БОТОВ (по уровням 0-9)
+   СЛОЖНОСТЬ
    ============================================================ */
 const BOT_LEVELS = [
-  { hp: 20,  dmg: 0.25, spd: 0.33 }, // 0
-  { hp: 40,  dmg: 0.5,  spd: 1.0  }, // 1
-  { hp: 80,  dmg: 1.0,  spd: 1.0  }, // 2
-  { hp: 100, dmg: 1.0,  spd: 1.0  }, // 3
-  { hp: 120, dmg: 1.0,  spd: 1.0  }, // 4
-  { hp: 140, dmg: 1.0,  spd: 1.0  }, // 5
-  { hp: 150, dmg: 1.0,  spd: 1.0  }, // 6
-  { hp: 200, dmg: 1.0,  spd: 1.0  }, // 7
-  { hp: 400, dmg: 3.0,  spd: 2.0  }, // 8
-  { hp: 500, dmg: 4.0,  spd: 3.0  }, // 9
+  { hp: 20,  dmg: 0.25, spd: 0.33 },
+  { hp: 40,  dmg: 0.5,  spd: 1.0  },
+  { hp: 80,  dmg: 1.0,  spd: 1.0  },
+  { hp: 100, dmg: 1.0,  spd: 1.0  },
+  { hp: 120, dmg: 1.0,  spd: 1.0  },
+  { hp: 140, dmg: 1.0,  spd: 1.0  },
+  { hp: 150, dmg: 1.0,  spd: 1.0  },
+  { hp: 200, dmg: 1.0,  spd: 1.0  },
+  { hp: 400, dmg: 3.0,  spd: 2.0  },
+  { hp: 500, dmg: 4.0,  spd: 3.0  },
 ];
 
 /* ============================================================
@@ -1226,51 +1198,40 @@ const walls = [
 ];
 
 const buildings = [
-  {
-    x: -40, z: -20, w: 14, d: 10, h: 6,
-    door: { side: 'south', width: 2.5 },
+  { x: -40, z: -20, w: 14, d: 10, h: 6, door: { side: 'south', width: 2.5 },
     windows: [
       { side: 'south', offset: -3, w: 2, h: 1.6, y: 1.5 },
       { side: 'south', offset:  3, w: 2, h: 1.6, y: 1.5 },
       { side: 'east',  offset:  0, w: 2, h: 1.6, y: 1.5 },
       { side: 'north', offset: -2, w: 2, h: 1.6, y: 1.5 },
       { side: 'north', offset:  2, w: 2, h: 1.6, y: 1.5 },
-    ],
-    stairs: { side: 'west' },
-  },
-  {
-    x: 40, z: 20, w: 12, d: 12, h: 6.5,
-    door: { side: 'west', width: 2.5 },
+    ], stairs: { side: 'west' } },
+  { x: 40, z: 20, w: 12, d: 12, h: 6.5, door: { side: 'west', width: 2.5 },
     windows: [
       { side: 'west', offset: -3, w: 2, h: 1.6, y: 1.5 },
       { side: 'west', offset:  3, w: 2, h: 1.6, y: 1.5 },
       { side: 'north', offset: 0, w: 2.5, h: 1.6, y: 1.5 },
       { side: 'south', offset: -2, w: 2, h: 1.6, y: 1.5 },
       { side: 'south', offset:  2, w: 2, h: 1.6, y: 1.5 },
-    ],
-    stairs: { side: 'south' },
-  },
-  {
-    x: 0, z: -45, w: 12, d: 10, h: 5.5,
-    door: { side: 'north', width: 2.5 },
+    ], stairs: { side: 'south' } },
+  { x: 0, z: -45, w: 12, d: 10, h: 5.5, door: { side: 'north', width: 2.5 },
     windows: [
       { side: 'north', offset: -2.5, w: 2, h: 1.6, y: 1.5 },
       { side: 'north', offset:  2.5, w: 2, h: 1.6, y: 1.5 },
       { side: 'east', offset: 0, w: 2, h: 1.6, y: 1.5 },
       { side: 'west', offset: 0, w: 2, h: 1.6, y: 1.5 },
-    ],
-    stairs: { side: 'east' },
-  },
+    ], stairs: { side: 'east' } },
 ];
 
 /* ============================================================
-   THREE.JS СЦЕНА
+   СЦЕНА
    ============================================================ */
 let scene, camera, renderer, clock;
 let colliders = [], tracers = [], grenades = [], bloodParticles = [];
 let raycaster;
 let player, remotePlayer, bot;
-let weaponModels = { rifle: null, shotgun: null, sniper: null, grenade: null };
+let weaponModels = {};
+let menuWeaponHolder = null;
 
 const hpEl = document.getElementById('hp');
 const ammoEl = document.getElementById('ammoHud');
@@ -1289,14 +1250,14 @@ const menuCam = { angle: 0, speed: 0.12, radius: 14, height: 3.2, centerX: 0, ce
 const net = {
   peer: null, conn: null, isHost: false, isOnline: false,
   myName: 'Игрок', otherName: 'Другой', roomCode: null, connected: false,
-  guestInput: { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false, weapon:'rifle', reload:false, crouch:false },
+  guestInput: { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false, weapon:'rifle', reload:false, crouch:false, jump:false },
   lastSnapshot: null, lastSnapshotTime: 0,
   hostHp: 100, guestHp: 100,
   hostScore: 0, guestScore: 0,
   hostDeaths: 0, guestDeaths: 0,
   targetKills: 13,
   firstBlood: false,
-  gameStartTime: 0,
+  retryCount: 0,
 };
 
 const MODE = { MENU: 0, PLAY_SOLO: 1, PLAY_ONLINE: 2 };
@@ -1314,22 +1275,36 @@ const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 
 const WEAPON_STATS = {
-  rifle: { magSize: 30, reloadTime: 3000, damageBody: 20, damageHead: 80, fireRate: 110 },
-  shotgun: { magSize: 8, reloadTime: 3000, damageBody: 40, damageHead: 140, fireRate: 800 },
-  sniper: { magSize: 5, reloadTime: 3000, damageBody: 400, damageHead: 500, fireRate: 1500 }
+  rifle:   { magSize: 30, reloadTime: 3000, damageBody: 20, damageHead: 80, fireRate: 110 },
+  shotgun: { magSize: 8,  reloadTime: 3000, damageBody: 40, damageHead: 140, fireRate: 800 },
+  sniper:  { magSize: 5,  reloadTime: 3000, damageBody: 400, damageHead: 500, fireRate: 1500 }
 };
 
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3 };
 const BOT_SIGHT_DIST = 65, BOT_ATTACK_DIST = 25, BOT_FOV = Math.PI * 0.85;
-const BOT_HEARING_DIST = 70;
 const BOT_SPEED = 4.6;
 const BOT_FIRE_COOLDOWN = 450, BOT_DAMAGE = 14, BOT_ACCURACY = 0.55;
 const BOT_REACTION_TIME = 200, BOT_SEARCH_TIME = 8000;
 const BOT_STRAFE_INTERVAL = 700;
-const BOT_SPAWN = { x: -45, z: -45 };
 
 /* АУДИО */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function createTone(freq, duration, type) {
+  return function(pan = 0, volume = 1) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const panner = audioCtx.createStereoPanner();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(30, freq * 0.5), audioCtx.currentTime + duration);
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    panner.pan.setValueAtTime(pan, audioCtx.currentTime);
+    osc.connect(gain); gain.connect(panner); panner.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+  }
+}
 const sounds = {
   shot: createTone(150, 0.1, 'sawtooth'),
   shotgun: createTone(100, 0.2, 'square'),
@@ -1339,25 +1314,6 @@ const sounds = {
   headshot: createTone(600, 0.1, 'sine'),
   reload: createTone(400, 0.15, 'triangle')
 };
-function createTone(freq, duration, type) {
-  return function(pan = 0, volume = 1) {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const panner = audioCtx.createStereoPanner();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.5, audioCtx.currentTime + duration);
-    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-    panner.pan.setValueAtTime(pan, audioCtx.currentTime);
-    osc.connect(gain);
-    gain.connect(panner);
-    panner.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  }
-}
 
 /* ИНИЦИАЛИЗАЦИЯ */
 function initScene() {
@@ -1391,14 +1347,12 @@ function initScene() {
   player = {
     pos: new THREE.Vector3(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z),
     vy: 0, yaw: Math.PI, pitch: 0,
-    hp: 100, alive: true,
-    onGround: true,
+    hp: 100, alive: true, onGround: true,
     weapon: 'rifle', grenades: 1, lastGrenadeTime: 0,
     ammo: { rifle: 30, shotgun: 8, sniper: 5 },
     isReloading: false, reloadEndTime: 0,
     isCrouching: false, isScoped: false,
-    lastShotTime: 0,
-    inspecting: false, inspectEndTime: 0
+    lastShotTime: 0, inspecting: false, inspectEndTime: 0
   };
 
   remotePlayer = createRemotePlayerModel();
@@ -1413,16 +1367,10 @@ function initScene() {
   weaponModels.shotgun = createWeaponModel('shotgun');
   weaponModels.sniper = createWeaponModel('sniper');
   weaponModels.grenade = createWeaponModel('grenade');
-  weaponModels.rifle.visible = true;
-  weaponModels.shotgun.visible = false;
-  weaponModels.sniper.visible = false;
-  weaponModels.grenade.visible = false;
-  camera.add(weaponModels.rifle);
-  camera.add(weaponModels.shotgun);
-  camera.add(weaponModels.sniper);
-  camera.add(weaponModels.grenade);
+  camera.add(weaponModels.rifle, weaponModels.shotgun, weaponModels.sniper, weaponModels.grenade);
   scene.add(camera);
 
+  setWeaponVisible('rifle');
   updateAmmoUI();
   updateHpUI();
 
@@ -1431,7 +1379,12 @@ function initScene() {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
+    applyLayoutToGame();
   });
+}
+
+function setWeaponVisible(name) {
+  for (const k in weaponModels) weaponModels[k].visible = (k === name);
 }
 
 function createObject(w) {
@@ -1449,10 +1402,7 @@ function createObject(w) {
     mesh.position.set(w.x, w.h/2, w.z);
   } else {
     const geo = new THREE.BoxGeometry(w.w, w.h, w.d);
-    let mat;
-    if (w.type === 'crate') mat = MAT.crate;
-    else if (w.type === 'platform') mat = MAT.platform;
-    else mat = MAT.wall;
+    let mat = w.type === 'crate' ? MAT.crate : w.type === 'platform' ? MAT.platform : MAT.wall;
     const clonedMat = mat.clone();
     if (clonedMat.map) clonedMat.map = cloneTextureWithRepeat(
       mat === MAT.crate ? woodTex : sandstoneTex,
@@ -1465,7 +1415,7 @@ function createObject(w) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   scene.add(mesh);
-  addCollider(w.x, 0, w.z, w.w, w.h, w.d, w.type === 'platform' || w.type === 'crate');
+  addCollider(w.x, 0, w.z, w.w, w.h, w.d, w.type === 'platform' || w.type === 'crate', mesh);
 }
 
 function createBuilding(b) {
@@ -1483,7 +1433,7 @@ function createBuilding(b) {
     mesh.position.set(x, y, z);
     mesh.castShadow = true; mesh.receiveShadow = true;
     scene.add(mesh);
-    addCollider(x, y - h/2, z, w, h, d, false);
+    addCollider(x, y - h/2, z, w, h, d, false, mesh);
   }
 
   function buildWallSide(side) {
@@ -1493,7 +1443,7 @@ function createBuilding(b) {
     const wcz = b.z + (side === 'north' ? -hd : side === 'south' ? hd : 0);
     const holes = [];
     b.windows.filter(w => w.side === side).forEach(w => {
-      holes.push({ center: w.offset, width: w.w, yBottom: w.y, yTop: w.y + w.h, isWindow: true });
+      holes.push({ center: w.offset, width: w.w, yBottom: w.y, yTop: w.y + w.h });
     });
     if (b.door && b.door.side === side) {
       holes.push({ center: 0, width: b.door.width, yBottom: 0, yTop: b.h - 0.3, isDoor: true });
@@ -1528,7 +1478,7 @@ function createBuilding(b) {
   roofMesh.position.set(b.x, roofTopY - roofThickness/2, b.z);
   roofMesh.castShadow = true; roofMesh.receiveShadow = true;
   scene.add(roofMesh);
-  addCollider(b.x, roofY, b.z, b.w + 0.6, roofThickness, b.d + 0.6, true);
+  addCollider(b.x, roofY, b.z, b.w + 0.6, roofThickness, b.d + 0.6, true, roofMesh);
 
   const parapetH = 0.9, parapetT = 0.3;
   const pXO = hw + 0.3, pZO = hd + 0.3;
@@ -1539,7 +1489,7 @@ function createBuilding(b) {
     mesh.position.set(cx, roofTopY + parapetH/2, cz);
     mesh.castShadow = true; mesh.receiveShadow = true;
     scene.add(mesh);
-    addCollider(cx, roofTopY, cz, w, parapetH, d, false);
+    addCollider(cx, roofTopY, cz, w, parapetH, d, false, mesh);
   }
   if (stairsSide !== 'north') addParapet(b.x, b.z - pZO, b.w + 0.6, parapetT);
   if (stairsSide !== 'south') addParapet(b.x, b.z + pZO, b.w + 0.6, parapetT);
@@ -1570,7 +1520,7 @@ function createBuilding(b) {
     mesh.position.set(stepCX, stepH/2, stepCZ);
     mesh.castShadow = true; mesh.receiveShadow = true;
     scene.add(mesh);
-    addCollider(stepCX, 0, stepCZ, dx !== 0 ? stepDepth : stairWidth, stepH, dz !== 0 ? stepDepth : stairWidth, true);
+    addCollider(stepCX, 0, stepCZ, dx !== 0 ? stepDepth : stairWidth, stepH, dz !== 0 ? stepDepth : stairWidth, true, mesh);
   }
 
   const innerFloor = new THREE.Mesh(new THREE.BoxGeometry(b.w - 0.8, 0.05, b.d - 0.8), MAT.innerFloor);
@@ -1661,18 +1611,18 @@ const _testBox = new THREE.Box3();
 const _min = new THREE.Vector3();
 const _max = new THREE.Vector3();
 
-function addCollider(x, y, z, w, h, d, isFloor=false) {
+function addCollider(x, y, z, w, h, d, isFloor=false, mesh=null) {
   colliders.push({
     min: new THREE.Vector3(x - w/2, y, z - d/2),
     max: new THREE.Vector3(x + w/2, y + h, z + d/2),
-    isFloor,
+    isFloor, mesh
   });
 }
 
-function canExistAt(nx, nz, y, radius) {
+function canExistAt(nx, nz, y, radius, height = PLAYER_HEIGHT) {
   if (Math.abs(nx) > FLOOR-1 || Math.abs(nz) > FLOOR-1) return false;
   _min.set(nx - radius, y + 0.02, nz - radius);
-  _max.set(nx + radius, y + PLAYER_HEIGHT, nz + radius);
+  _max.set(nx + radius, y + height, nz + radius);
   _testBox.min.copy(_min); _testBox.max.copy(_max);
   for (let i = 0; i < colliders.length; i++) {
     if (_testBox.intersectsBox(colliders[i])) return false;
@@ -1705,17 +1655,17 @@ function stepPlayerPhysics(state, moveInput, dt, crouching) {
   const step = speed * dt;
   const nx = state.pos.x + mvX * step;
   const nz = state.pos.z + mvZ * step;
-  if (canExistAt(nx, state.pos.z, state.pos.y, PLAYER_RADIUS)) state.pos.x = nx;
-  if (canExistAt(state.pos.x, nz, state.pos.y, PLAYER_RADIUS)) state.pos.z = nz;
+  const curHeight = crouching ? CROUCH_HEIGHT : PLAYER_HEIGHT;
+  if (canExistAt(nx, state.pos.z, state.pos.y, PLAYER_RADIUS, curHeight)) state.pos.x = nx;
+  if (canExistAt(state.pos.x, nz, state.pos.y, PLAYER_RADIUS, curHeight)) state.pos.z = nz;
 
   state.vy += GRAVITY * dt;
   let ny = state.pos.y + state.vy * dt;
   const groundY = groundHeightAt(state.pos.x, state.pos.z, state.pos.y, PLAYER_RADIUS);
-  const curHeight = crouching ? CROUCH_HEIGHT : PLAYER_HEIGHT;
   if (ny <= groundY) {
     ny = groundY; state.vy = 0; state.onGround = true;
   } else {
-    if (state.vy > 0 && !canExistAt(state.pos.x, state.pos.z, ny, PLAYER_RADIUS)) {
+    if (state.vy > 0 && !canExistAt(state.pos.x, state.pos.z, ny, PLAYER_RADIUS, curHeight)) {
       let ceilY = Infinity;
       for (let i = 0; i < colliders.length; i++) {
         const b = colliders[i];
@@ -1733,8 +1683,7 @@ function stepPlayerPhysics(state, moveInput, dt, crouching) {
 
 function tryJump(state) {
   if (state.onGround) {
-    state.vy = JUMP_VELOCITY;
-    state.onGround = false;
+    state.vy = JUMP_VELOCITY; state.onGround = false;
     return true;
   }
   return false;
@@ -1762,7 +1711,6 @@ leftHalf.addEventListener('touchstart', e => {
   knobL.style.transform = 'translate(0,0)';
   input.moveX = 0; input.moveY = 0;
 }, { passive:false });
-
 leftHalf.addEventListener('touchmove', e => {
   e.preventDefault();
   if (!moveTouch.active) return;
@@ -1779,7 +1727,6 @@ leftHalf.addEventListener('touchmove', e => {
     break;
   }
 }, { passive:false });
-
 const endMove = e => {
   e.preventDefault();
   for (const t of e.changedTouches) {
@@ -1804,7 +1751,6 @@ rightHalf.addEventListener('touchstart', e => {
   lookTouch.lastX = t.clientX; lookTouch.lastY = t.clientY;
   lookTouch.active = true;
 }, { passive:false });
-
 rightHalf.addEventListener('touchmove', e => {
   e.preventDefault();
   if (!lookTouch.active || !player || !player.alive) return;
@@ -1819,7 +1765,6 @@ rightHalf.addEventListener('touchmove', e => {
     break;
   }
 }, { passive:false });
-
 const endLook = e => {
   e.preventDefault();
   for (const t of e.changedTouches) {
@@ -1830,7 +1775,17 @@ rightHalf.addEventListener('touchend', endLook, { passive:false });
 rightHalf.addEventListener('touchcancel', endLook, { passive:false });
 
 const jumpBtn = document.getElementById('jump');
-jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); if (mode !== MODE.MENU && player.alive) tryJump(player); }, { passive:false });
+jumpBtn.addEventListener('touchstart', e => {
+  e.preventDefault(); e.stopPropagation();
+  if (mode !== MODE.MENU && player.alive) {
+    if (mode === MODE.PLAY_ONLINE && !net.isHost) {
+      // Гость — шлёт input jump
+      player._jumpPending = true;
+    } else {
+      tryJump(player);
+    }
+  }
+}, { passive:false });
 jumpBtn.addEventListener('mousedown', () => { if (mode !== MODE.MENU && player.alive) tryJump(player); });
 
 const crouchBtn = document.getElementById('crouchBtn');
@@ -1846,16 +1801,16 @@ const swapBtn = document.getElementById('swapBtn');
 swapBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
   if (mode !== MODE.MENU && player.alive && !player.isReloading) {
-    // Отменяем осмотр и зум
     player.inspecting = false;
     scopeOverlay.classList.remove('show');
     camera.fov = 70; camera.updateProjectionMatrix();
     player.isScoped = false;
+    document.getElementById('zoomBtn').classList.remove('active');
 
     const cycle = ['rifle', 'shotgun', 'sniper', 'grenade'];
     const idx = cycle.indexOf(player.weapon);
     player.weapon = cycle[(idx + 1) % cycle.length];
-    updateWeaponVisual();
+    setWeaponVisible(player.weapon);
     updateAmmoUI();
   }
 }, { passive:false });
@@ -1871,13 +1826,8 @@ zoomBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
   if (mode !== MODE.MENU && player.alive && player.weapon === 'sniper') {
     player.isScoped = !player.isScoped;
-    if (player.isScoped) {
-      scopeOverlay.classList.add('show');
-      camera.fov = 20;
-    } else {
-      scopeOverlay.classList.remove('show');
-      camera.fov = 70;
-    }
+    if (player.isScoped) { scopeOverlay.classList.add('show'); camera.fov = 20; }
+    else { scopeOverlay.classList.remove('show'); camera.fov = 70; }
     camera.updateProjectionMatrix();
     zoomBtn.classList.toggle('active', player.isScoped);
   }
@@ -1889,32 +1839,24 @@ fireBtn.addEventListener('touchend',   e => { e.preventDefault(); e.stopPropagat
 fireBtn.addEventListener('touchcancel',e => { e.preventDefault(); e.stopPropagation(); input.fire = false; }, { passive:false });
 fireBtn.addEventListener('mousedown',  () => input.fire = true);
 fireBtn.addEventListener('mouseup',    () => input.fire = false);
+fireBtn.addEventListener('mouseleave', () => input.fire = false);
 
 function handleReload() {
   if (player.weapon === 'grenade' || player.isReloading || player.inspecting) return;
   const stats = WEAPON_STATS[player.weapon];
   if (player.ammo[player.weapon] === stats.magSize) {
-    // Осмотр оружия
     player.inspecting = true;
     player.inspectEndTime = performance.now() + 3000;
     sounds.reload(0, 0.5);
   } else {
-    // Перезарядка
     player.isReloading = true;
     player.reloadEndTime = performance.now() + stats.reloadTime;
     sounds.reload(0, 0.5);
     updateAmmoUI();
   }
 }
-
-function updateWeaponVisual() {
-  weaponModels.rifle.visible = player.weapon === 'rifle';
-  weaponModels.shotgun.visible = player.weapon === 'shotgun';
-  weaponModels.sniper.visible = player.weapon === 'sniper';
-  weaponModels.grenade.visible = player.weapon === 'grenade';
-}
-
 function updateAmmoUI() {
+  if (!player) return;
   if (player.weapon === 'grenade') {
     ammoEl.textContent = `ГРАНАТА: ${player.grenades}`;
     ammoEl.classList.remove('reloading');
@@ -1928,17 +1870,14 @@ function updateAmmoUI() {
     ammoEl.classList.remove('reloading');
   }
 }
-
 function updateHpUI() {
   if (!player) return;
-  hpEl.textContent = Math.max(0, player.hp);
+  hpEl.textContent = Math.max(0, Math.round(player.hp));
 }
-
 function showHitmarker(isHead) {
   const ch = document.getElementById('crosshair');
   ch.classList.remove('hit-body', 'hit-head');
-  if (isHead) ch.classList.add('hit-head');
-  else ch.classList.add('hit-body');
+  ch.classList.add(isHead ? 'hit-head' : 'hit-body');
   setTimeout(() => ch.classList.remove('hit-body', 'hit-head'), 200);
 }
 
@@ -1952,9 +1891,8 @@ function tryShoot() {
     player.lastGrenadeTime = now;
     player.grenades--;
     throwGrenade();
-    // Возврат на автомат
     player.weapon = 'rifle';
-    updateWeaponVisual();
+    setWeaponVisible('rifle');
     updateAmmoUI();
     return;
   }
@@ -1962,13 +1900,10 @@ function tryShoot() {
   const stats = WEAPON_STATS[player.weapon];
   if (now - player.lastShotTime < stats.fireRate) return;
   if (player.ammo[player.weapon] <= 0) {
-    // Автоматическая перезарядка
-    if (player.weapon !== 'grenade') {
-      player.isReloading = true;
-      player.reloadEndTime = now + stats.reloadTime;
-      sounds.reload(0, 0.5);
-      updateAmmoUI();
-    }
+    player.isReloading = true;
+    player.reloadEndTime = now + stats.reloadTime;
+    sounds.reload(0, 0.5);
+    updateAmmoUI();
     return;
   }
 
@@ -1992,7 +1927,10 @@ function tryShoot() {
   if (mode === MODE.PLAY_SOLO && bot.alive) {
     targets.push(bot.hitHead, bot.hitBody);
   }
-  for (let i = 0; i < colliders.length; i++) targets.push(colliders[i].mesh);
+  // стены/ящики — реальные меши
+  for (let i = 0; i < colliders.length; i++) {
+    if (colliders[i].mesh) targets.push(colliders[i].mesh);
+  }
 
   raycaster.set(origin, shootDir);
   const hits = raycaster.intersectObjects(targets, false);
@@ -2001,31 +1939,44 @@ function tryShoot() {
   spawnTracer(origin, end, 0xffaa00);
 
   if (!first) return;
+  if (!first.object.userData || !first.object.userData.part) return;
 
-  if (first.object.userData.part) {
-    const isHead = first.object.userData.part === 'head';
-    const dmg = isHead ? stats.damageHead : stats.damageBody;
-    showHitmarker(isHead);
-    spawnBlood(first.point);
-    if (isHead) sounds.headshot(0, 0.5);
-    else sounds.hit(0, 0.5);
+  const isHead = first.object.userData.part === 'head';
+  const dmg = isHead ? stats.damageHead : stats.damageBody;
+  showHitmarker(isHead);
+  spawnBlood(first.point);
+  if (isHead) sounds.headshot(0, 0.5); else sounds.hit(0, 0.5);
 
-    if (mode === MODE.PLAY_SOLO && first.object.userData.isBot) {
-      bot.hp -= dmg;
-      bot.lastDamaged = performance.now();
-      if (bot.hp <= 0 && bot.alive) {
-        bot.alive = false;
-        bot.group.rotation.x = -Math.PI/2;
-        bot.group.position.y = -0.6;
-        bot.respawnAt = performance.now() + 3000;
-        // XP за победу над ботом
-        const lvl = getLevel(progress.xp);
-        addXp(getXpForWin(lvl));
-      }
-    } else if (mode === MODE.PLAY_ONLINE) {
+  if (mode === MODE.PLAY_SOLO && first.object.userData.isBot) {
+    bot.hp -= dmg;
+    bot.lastDamaged = now;
+    if (bot.hp <= 0 && bot.alive) killBot();
+  } else if (mode === MODE.PLAY_ONLINE) {
+    // стреляем в remotePlayer. У хоста remotePlayer = гость. У гостя = хост.
+    if (net.conn && net.connected) {
       net.conn.send({ t:'dmg', dmg, head: isHead });
     }
   }
+}
+
+function killBot() {
+  bot.alive = false;
+  bot.hp = 0;
+  bot.group.rotation.x = -Math.PI/2;
+  bot.group.position.y = -0.6;
+  bot.respawnAt = performance.now() + 3000;
+  const lvl = getLevel(progress.xp);
+  const xp = getXpForWin(lvl);
+  if (xp > 0) addXp(xp);
+  showKillMsg('Ты', 'БОТ');
+}
+
+function showKillMsg(killer, victim) {
+  const el = document.createElement('div');
+  el.className = 'killMsg';
+  el.innerHTML = `<b>${killer}</b> ⟶ <b style="color:#ff8888">${victim}</b>`;
+  killfeed.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
 }
 
 function spawnTracer(a, b, color) {
@@ -2074,9 +2025,9 @@ function updateGrenades(dt, now) {
     ud.vel.y -= 20 * dt;
     const nextX = g.position.x + ud.vel.x * dt;
     const nextZ = g.position.z + ud.vel.z * dt;
-    if (canExistAt(nextX, g.position.z, g.position.y, 0.15)) g.position.x = nextX;
+    if (canExistAt(nextX, g.position.z, g.position.y, 0.15, 0.3)) g.position.x = nextX;
     else ud.vel.x *= -0.5;
-    if (canExistAt(g.position.x, nextZ, g.position.y, 0.15)) g.position.z = nextZ;
+    if (canExistAt(g.position.x, nextZ, g.position.y, 0.15, 0.3)) g.position.z = nextZ;
     else ud.vel.z *= -0.5;
     g.position.y += ud.vel.y * dt;
     const gy = groundHeightAt(g.position.x, g.position.z, g.position.y, 0.15);
@@ -2098,19 +2049,12 @@ function updateGrenades(dt, now) {
         const dist = player.pos.distanceTo(g.position);
         if (dist < explodeDist) {
           const dmg = Math.round(120 * (1 - dist / explodeDist));
-          if (dmg > 0) damagePlayerLocal(dmg);
+          if (dmg > 0) damagePlayerLocal(dmg, 'ГРАНАТА');
         }
       }
       if (mode === MODE.PLAY_SOLO && bot.alive && bot.group.position.distanceTo(g.position) < explodeDist) {
         bot.hp -= 150;
-        if (bot.hp <= 0 && bot.alive) {
-          bot.alive = false;
-          bot.group.rotation.x = -Math.PI/2;
-          bot.group.position.y = -0.6;
-          bot.respawnAt = performance.now() + 3000;
-          const lvl = getLevel(progress.xp);
-          addXp(getXpForWin(lvl));
-        }
+        if (bot.hp <= 0 && bot.alive) killBot();
       }
     }
   }
@@ -2127,25 +2071,31 @@ function updateBlood(dt, now) {
   }
 }
 
-function damagePlayerLocal(dmg) {
+function damagePlayerLocal(dmg, killerName = 'БОТ') {
   if (!player.alive) return;
   player.hp -= dmg;
   if (player.hp < 0) player.hp = 0;
   updateHpUI();
   dmgFlash.style.opacity = '0.8';
   setTimeout(() => dmgFlash.style.opacity = '0', 100);
-  if (player.hp <= 0) dieLocal();
+  if (player.hp <= 0) dieLocal(killerName);
 }
 
-function dieLocal() {
+function dieLocal(killerName) {
+  if (!player.alive) return;
   player.alive = false;
   input.fire = false;
   input.moveX = 0; input.moveY = 0;
-  document.getElementById('deathKiller').textContent = mode === MODE.PLAY_ONLINE ? net.otherName : 'БОТ';
+  document.getElementById('deathKiller').textContent = killerName;
   document.getElementById('deathOverlay').classList.add('show');
+
   if (mode === MODE.PLAY_ONLINE) {
     if (net.isHost) net.hostDeaths++;
     else net.guestDeaths++;
+    // сообщаем другому о смерти — он засчитает себе килл
+    if (net.conn && net.connected) {
+      net.conn.send({ t:'died', by: killerName });
+    }
     setTimeout(() => {
       document.getElementById('deathOverlay').classList.remove('show');
       if (!gameWinner) respawnLocal();
@@ -2156,9 +2106,18 @@ function dieLocal() {
 function respawnLocal() {
   player.alive = true;
   player.hp = 100;
-  player.pos.set(net.isHost ? 0 : 0, 0, net.isHost ? 25 : -25);
+  if (mode === MODE.PLAY_ONLINE) {
+    player.pos.set(0, 0, net.isHost ? 25 : -25);
+    player.yaw = net.isHost ? Math.PI : 0;
+    if (net.isHost) net.hostHp = 100; else net.guestHp = 100;
+    if (net.conn && net.connected) net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
+  } else {
+    player.pos.set(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z);
+    player.yaw = Math.PI;
+  }
   player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
   player.grenades = 1;
+  player.vy = 0; player.onGround = true;
   updateHpUI(); updateAmmoUI();
 }
 
@@ -2197,10 +2156,7 @@ function updateBot(dt, now) {
     bot.lastSeenTime = now;
   }
 
-  const lowHP = bot.hp < bot.maxHp * 0.35;
-  if (lowHP && !canSeePlayer) {
-    // Просто патрулирует, но медленнее
-  } else if (canSeePlayer) {
+  if (canSeePlayer) {
     bot.state = dist < BOT_ATTACK_DIST ? BOT_STATE.ATTACK : BOT_STATE.CHASE;
   } else if (bot.hasSeenPlayer && now - bot.lastSeenTime < BOT_SEARCH_TIME) {
     bot.state = BOT_STATE.SEARCH;
@@ -2222,24 +2178,27 @@ function updateBot(dt, now) {
       const step = BOT_SPEED * bot.spdMul * dt;
       const nx = bp.x + perpX * step;
       const nz = bp.z + perpZ * step;
-      if (canExistAt(nx, bp.z, 0, 0.5)) bp.x = nx;
-      if (canExistAt(bp.x, nz, 0, 0.5)) bp.z = nz;
+      if (canExistAt(nx, bp.z, 0, 0.5, 2)) bp.x = nx;
+      if (canExistAt(bp.x, nz, 0, 0.5, 2)) bp.z = nz;
     }
     if (now - bot.spottedAt < BOT_REACTION_TIME) return;
     if (now - bot.lastShot < BOT_FIRE_COOLDOWN) return;
     if (!hasLineOfSight(bp.x, bp.z, player.pos.x, player.pos.z, 1.6, player.pos.y + PLAYER_HEIGHT)) return;
     bot.lastShot = now;
     if (Math.random() < BOT_ACCURACY) {
-      damagePlayerLocal(BOT_DAMAGE * bot.dmgMul);
+      damagePlayerLocal(BOT_DAMAGE * bot.dmgMul, 'БОТ');
     }
-  } else if (bot.state === BOT_STATE.CHASE) {
+  } else if (bot.state === BOT_STATE.CHASE || bot.state === BOT_STATE.SEARCH) {
+    const tgtX = bot.state === BOT_STATE.CHASE ? player.pos.x : bot.lastSeenX;
+    const tgtZ = bot.state === BOT_STATE.CHASE ? player.pos.z : bot.lastSeenZ;
     if (!bot.path || now - bot.repathAt > 400) {
-      bot.path = findPath(bp.x, bp.z, player.pos.x, player.pos.z);
+      bot.path = findPath(bp.x, bp.z, tgtX, tgtZ);
       bot.pathIdx = 0; bot.repathAt = now;
     }
     moveBotAlongPath(bot, dt, 1);
-  } else if (bot.state === BOT_STATE.PATROL) {
-    if (!bot.patrolTarget || Math.hypot(bot.patrolTarget.x - bp.x, bot.patrolTarget.z - bp.z) < 1.2 || (bot.patrolWaitUntil && now > bot.patrolWaitUntil)) {
+  } else {
+    // PATROL
+    if (!bot.patrolTarget || Math.hypot(bot.patrolTarget.x - bp.x, bot.patrolTarget.z - bp.z) < 1.2) {
       if (bot.patrolWaitUntil && now < bot.patrolWaitUntil) {
         turnTowards(bot, bot.facing + dt * 1.5, dt, 10);
         return;
@@ -2256,7 +2215,7 @@ function updateBot(dt, now) {
           break;
         }
       }
-      return;
+      if (!bot.patrolTarget) return;
     }
     moveBotAlongPath(bot, dt, 0.7);
   }
@@ -2272,8 +2231,8 @@ function moveBotAlongPath(b, dt, speedMul = 1) {
   const step = BOT_SPEED * b.spdMul * speedMul * dt;
   const nx = bp.x + (wx / wdist) * step;
   const nz = bp.z + (wz / wdist) * step;
-  if (canExistAt(nx, bp.z, 0, 0.5)) bp.x = nx;
-  if (canExistAt(bp.x, nz, 0, 0.5)) bp.z = nz;
+  if (canExistAt(nx, bp.z, 0, 0.5, 2)) bp.x = nx;
+  if (canExistAt(bp.x, nz, 0, 0.5, 2)) bp.z = nz;
   turnTowards(b, Math.atan2(wx, wz), dt, 8);
 }
 
@@ -2291,8 +2250,9 @@ function angleDiff(a, b) {
 function hasLineOfSight(fromX, fromZ, toX, toZ, fromY = 1.6, toY = 1.6) {
   const ray = new THREE.Ray(new THREE.Vector3(fromX, fromY, fromZ), new THREE.Vector3(toX - fromX, toY - fromY, toZ - fromZ).normalize());
   const dist = Math.hypot(toX - fromX, toZ - fromZ);
+  const hitVec = new THREE.Vector3();
   for (let i = 0; i < colliders.length; i++) {
-    const hit = ray.intersectBox(colliders[i], new THREE.Vector3());
+    const hit = ray.intersectBox(colliders[i], hitVec);
     if (hit && hit.distanceTo(ray.origin) < dist - 0.2) return false;
   }
   return true;
@@ -2300,9 +2260,13 @@ function hasLineOfSight(fromX, fromZ, toX, toZ, fromY = 1.6, toY = 1.6) {
 
 /* ========== NAV MESH ========== */
 let NAV_CELL, NAV_SIZE, NAV_OFFSET, NAV_RADIUS, navGrid;
+let _gScores, _cameFrom;
 function buildNavGrid() {
-  NAV_CELL = 1.5; NAV_SIZE = Math.ceil(FLOOR*2 / NAV_CELL); NAV_OFFSET = FLOOR; NAV_RADIUS = 0.6;
+  NAV_CELL = 1.0; NAV_OFFSET = FLOOR; NAV_RADIUS = 0.5;
+  NAV_SIZE = Math.ceil(FLOOR*2 / NAV_CELL);
   navGrid = new Uint8Array(NAV_SIZE * NAV_SIZE);
+  _gScores = new Float32Array(NAV_SIZE * NAV_SIZE);
+  _cameFrom = new Int32Array(NAV_SIZE * NAV_SIZE);
   const testBox = new THREE.Box3();
   const mn = new THREE.Vector3(), mx = new THREE.Vector3();
   for (let gy = 0; gy < NAV_SIZE; gy++) {
@@ -2310,7 +2274,7 @@ function buildNavGrid() {
       const wx = gx * NAV_CELL - NAV_OFFSET + NAV_CELL/2;
       const wz = gy * NAV_CELL - NAV_OFFSET + NAV_CELL/2;
       mn.set(wx - NAV_RADIUS, 0, wz - NAV_RADIUS);
-      mx.set(wx + NAV_RADIUS, 2, wz + NAV_RADIUS);
+      mx.set(wx + NAV_RADIUS, 1.2, wz + NAV_RADIUS);
       testBox.min.copy(mn); testBox.max.copy(mx);
       let blocked = 0;
       for (let i = 0; i < colliders.length; i++) {
@@ -2351,8 +2315,6 @@ class MinHeap {
   }
   get size() { return this.a.length; }
 }
-const _gScores = new Float32Array(10000);
-const _cameFrom = new Int32Array(10000);
 function heuristic(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by) * NAV_CELL; }
 function findPath(sx, sz, ex, ez) {
   const s = worldToGrid(sx, sz); const e = worldToGrid(ex, ez);
@@ -2364,7 +2326,7 @@ function findPath(sx, sz, ex, ez) {
   _gScores[startIdx] = 0;
   open.push({ idx: startIdx, gx: s.gx, gy: s.gy, f: heuristic(s.gx, s.gy, e.gx, e.gy) });
   inOpen[startIdx] = 1;
-  const dirs = [[ 1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [ 1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
+  const dirs = [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
   while (open.size) {
     const cur = open.pop();
     if (cur.idx === endIdx) {
@@ -2396,7 +2358,6 @@ function findPath(sx, sz, ex, ez) {
   return null;
 }
 
-/* ========== УРОВНИ БОТА ========== */
 function applyBotLevel(lvl) {
   const cfg = BOT_LEVELS[Math.min(lvl, 9)];
   bot.maxHp = cfg.hp;
@@ -2405,7 +2366,7 @@ function applyBotLevel(lvl) {
   bot.spdMul = cfg.spd;
 }
 
-/* ========== МЕНЮ / НАВИГАЦИЯ ========== */
+/* ========== МЕНЮ ========== */
 const menuEl = document.getElementById('menu');
 const tabs = document.querySelectorAll('.tab');
 const panels = {
@@ -2417,16 +2378,15 @@ const panels = {
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
     const name = tab.dataset.tab;
-    tabs.forEach(t => t.classList.toggle('active', t === name));
+    tabs.forEach(t => t.classList.toggle('active', t === tab));
     Object.keys(panels).forEach(k => panels[k].classList.toggle('active', k === name));
   });
 });
-
 document.getElementById('sensInput').addEventListener('input', e => { document.getElementById('sensVal').textContent = e.target.value; });
 document.getElementById('opacityInput').addEventListener('input', e => { document.getElementById('opacityVal').textContent = e.target.value; });
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
 
-/* ========== СЕТЕВЫЕ ФУНКЦИИ ========== */
+/* ========== СЕТЬ ========== */
 function setNetStatus(text, cls) {
   const el = document.getElementById('netStatus');
   el.textContent = text;
@@ -2437,14 +2397,20 @@ function showView(viewId) {
   document.getElementById(viewId).classList.add('show');
 }
 function genRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
   let s = '';
-  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return 'zak' + s.toLowerCase();
+  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return 'zak' + s;
 }
-function displayRoomCode(code) { return code.replace('zak', '').toUpperCase(); }
+function displayRoomCode(code) { return (code || '').replace('zak', '').toUpperCase(); }
 
-function createRoom() {
+function destroyPeer() {
+  if (net.peer) { try { net.peer.destroy(); } catch(_){} net.peer = null; }
+  if (net.conn) { try { net.conn.close(); } catch(_){} net.conn = null; }
+  net.connected = false;
+}
+
+function createRoom(isRetry = false) {
   const nick = (document.getElementById('hostNameInput').value || 'Хост').trim().slice(0, 12);
   if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
   net.myName = nick;
@@ -2452,14 +2418,14 @@ function createRoom() {
   net.roomCode = genRoomCode();
   net.hostScore = net.guestScore = 0;
   net.hostDeaths = net.guestDeaths = 0;
-  net.firstBlood = false;
   gameWinner = null;
 
   const modeVal = document.getElementById('netModeSelect').value;
   if (modeVal === 'blood') { net.targetKills = -1; net.firstBlood = true; }
-  else { net.targetKills = parseInt(modeVal); }
+  else { net.targetKills = parseInt(modeVal); net.firstBlood = false; }
 
   setNetStatus('СОЗДАНИЕ КОМНАТЫ...', 'wait');
+  destroyPeer();
 
   net.peer = new Peer(net.roomCode, {
     host: PEER_HOST, port: PEER_PORT, path: PEER_PATH, secure: PEER_SECURE,
@@ -2467,6 +2433,7 @@ function createRoom() {
   });
 
   net.peer.on('open', () => {
+    net.retryCount = 0;
     setNetStatus('ЖДЁМ ГОСТЯ...', 'wait');
     showView('hostView');
     document.getElementById('roomCode').textContent = displayRoomCode(net.roomCode);
@@ -2478,12 +2445,19 @@ function createRoom() {
     net.conn = conn;
     conn.on('open', () => { net.connected = true; });
     conn.on('data', handlePeerData);
-    conn.on('close', () => { if (mode === MODE.PLAY_ONLINE) { alert('Соединение разорвано'); exitToMenu(); } });
+    conn.on('close', () => {
+      net.connected = false;
+      if (mode === MODE.PLAY_ONLINE) { alert('Соединение разорвано'); exitToMenu(); }
+    });
   });
 
   net.peer.on('error', (err) => {
-    if (err.type === 'unavailable-id') setNetStatus('КОД ЗАНЯТ', 'err');
-    else setNetStatus('ОШИБКА: ' + err.type, 'err');
+    if (err.type === 'unavailable-id' && !isRetry && net.retryCount < 5) {
+      net.retryCount++;
+      setTimeout(() => createRoom(true), 200);
+      return;
+    }
+    setNetStatus('ОШИБКА: ' + err.type, 'err');
   });
 }
 
@@ -2492,7 +2466,7 @@ function joinRoom() {
   let code = (document.getElementById('joinCode').value || '').trim().toLowerCase();
   if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
   if (!code) { setNetStatus('ВВЕДИ КОД', 'err'); return; }
-  code = 'zak' + code.replace('zak', '');
+  if (!code.startsWith('zak')) code = 'zak' + code;
 
   net.myName = nick;
   net.isHost = false;
@@ -2500,6 +2474,7 @@ function joinRoom() {
   net.hostDeaths = net.guestDeaths = 0;
   gameWinner = null;
   setNetStatus('ПОДКЛЮЧЕНИЕ...', 'wait');
+  destroyPeer();
 
   net.peer = new Peer(null, {
     host: PEER_HOST, port: PEER_PORT, path: PEER_PATH, secure: PEER_SECURE,
@@ -2514,6 +2489,7 @@ function joinRoom() {
     });
     net.conn.on('data', handlePeerData);
     net.conn.on('close', () => {
+      net.connected = false;
       if (mode === MODE.PLAY_ONLINE) { alert('Соединение разорвано'); exitToMenu(); }
       else setNetStatus('НЕ УДАЛОСЬ', 'err');
     });
@@ -2528,87 +2504,155 @@ function joinRoom() {
 function handlePeerData(data) {
   if (!data || !data.t) return;
 
-  if (data.t === 'hello') {
-    if (net.isHost) {
-      net.otherName = data.name;
-      const modeVal = document.getElementById('netModeSelect').value;
-      net.conn.send({
-        t:'start', name: net.myName,
-        spawnX: 0, spawnZ: -25,
-        targetKills: net.targetKills,
-        firstBlood: net.firstBlood,
-      });
-      enterOnlineGame(0, 25, 0, -25);
-    }
-  } else if (data.t === 'start') {
-    if (!net.isHost) {
-      net.otherName = data.name;
-      net.targetKills = data.targetKills;
-      net.firstBlood = data.firstBlood;
-      enterOnlineGame(data.spawnX, data.spawnZ, 0, 25);
-    }
-  } else if (data.t === 'input') {
-    if (net.isHost) {
-      net.guestInput.moveX = data.mx;
-      net.guestInput.moveY = data.my;
-      net.guestInput.yaw = data.yaw;
-      net.guestInput.pitch = data.pitch;
-      net.guestInput.fire = data.fire;
-      net.guestInput.weapon = data.weapon;
-      net.guestInput.crouch = data.crouch;
-    }
-  } else if (data.t === 'state') {
-    if (!net.isHost) { net.lastSnapshot = data; net.lastSnapshotTime = performance.now(); }
-  } else if (data.t === 'dmg') {
-    // Кто получает dmg? Хост обрабатывает, когда гость стреляет в хоста.
-    if (net.isHost) {
-      damagePlayerLocal(data.dmg);
-      if (net.firstBlood && !gameWinner) {
-        net.guestScore++;
-        gameWinner = 'guest';
-        checkWinCondition();
+  switch (data.t) {
+    case 'hello':
+      if (net.isHost) {
+        net.otherName = data.name;
+        net.conn.send({
+          t:'start', name: net.myName,
+          spawnX: 0, spawnZ: -25,
+          targetKills: net.targetKills,
+          firstBlood: net.firstBlood,
+        });
+        enterOnlineGame(0, 25, 0, -25, Math.PI, 0);
       }
-      net.conn.send({ t:'hp', host: player.hp, guest: net.guestHp });
-    } else {
-      net.guestHp -= data.dmg;
-      if (net.guestHp < 0) net.guestHp = 0;
-      player.hp = net.guestHp;
-      updateHpUI();
-      dmgFlash.style.opacity = '0.8';
-      setTimeout(() => dmgFlash.style.opacity = '0', 100);
-      if (net.guestHp <= 0 && player.alive) {
-        dieLocal();
-        if (net.firstBlood && !gameWinner) {
-          gameWinner = 'host';
-          checkWinCondition();
+      break;
+
+    case 'start':
+      if (!net.isHost) {
+        net.otherName = data.name;
+        net.targetKills = data.targetKills;
+        net.firstBlood = data.firstBlood;
+        enterOnlineGame(data.spawnX, data.spawnZ, 0, 25, 0, Math.PI);
+      }
+      break;
+
+    case 'input':
+      if (net.isHost) {
+        net.guestInput.moveX = data.mx || 0;
+        net.guestInput.moveY = data.my || 0;
+        net.guestInput.yaw = data.yaw || 0;
+        net.guestInput.pitch = data.pitch || 0;
+        net.guestInput.fire = !!data.fire;
+        net.guestInput.weapon = data.weapon || 'rifle';
+        net.guestInput.crouch = !!data.crouch;
+        net.guestInput.jump = !!data.jump;
+      }
+      break;
+
+    case 'state':
+      if (!net.isHost) {
+        net.lastSnapshot = data;
+        net.lastSnapshotTime = performance.now();
+        if (data.hostHp !== undefined) { net.hostHp = data.hostHp; }
+        if (data.guestHp !== undefined) { net.guestHp = data.guestHp; }
+        if (net.isHost) otherHpEl.textContent = net.guestHp;
+        else otherHpEl.textContent = net.hostHp;
+      }
+      break;
+
+    case 'dmg':
+      // Пришёл урон за наш удар по получателю. Если мы хост — гость стреляет в нас.
+      // Если мы гость — хост стреляет в нас.
+      if (net.isHost) {
+        net.guestHp -= data.dmg;
+        if (net.guestHp < 0) net.guestHp = 0;
+        if (net.guestHp <= 0 && remotePlayer.group.visible) {
+          // гость убит — нам килл
+          killGuest();
         }
+        net.conn.send({ t:'state', hostHp: net.hostHp, guestHp: net.guestHp,
+          host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, alive: player.alive } });
+      } else {
+        net.hostHp -= data.dmg;
+        if (net.hostHp < 0) net.hostHp = 0;
+        if (net.hostHp <= 0 && remotePlayer.group.visible) {
+          killHost();
+        }
+        net.conn.send({ t:'state', hostHp: net.hostHp, guestHp: net.guestHp,
+          host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, alive: player.alive } });
       }
-      net.conn.send({ t:'hp', host: net.hostHp, guest: net.guestHp });
-    }
-  } else if (data.t === 'hp') {
-    net.hostHp = data.host;
-    net.guestHp = data.guest;
-    otherHpEl.textContent = net.isHost ? data.guest : data.host;
-  } else if (data.t === 'kill') {
-    if (data.victim === net.myName && !gameWinner) {
-      // ...
-    }
+      break;
+
+    case 'died':
+      // Другой игрок умер. Засчитываем себе килл.
+      if (net.isHost) {
+        net.hostScore++;
+        showKillMsg(net.myName, net.otherName);
+      } else {
+        net.guestScore++;
+        showKillMsg(net.myName, net.otherName);
+      }
+      updateScoreboard();
+      checkWinCondition();
+      break;
+
+    case 'respawn':
+      // Противник респавнится — обновляем remotePlayer
+      if (data.x !== undefined && data.z !== undefined) {
+        remotePlayer.group.position.set(data.x, 0, data.z);
+        remotePlayer.group.visible = true;
+        if (net.isHost) net.guestHp = 100; else net.hostHp = 100;
+      }
+      break;
   }
 }
 
-function enterOnlineGame(myX, myZ, otherX, otherZ) {
+function killGuest() {
+  remotePlayer.group.visible = false;
+  if (net.isHost) {
+    net.hostScore++;
+    showKillMsg(net.myName, net.otherName);
+  }
+  updateScoreboard();
+  checkWinCondition();
+  // Респавн гостя через 3 секунды
+  setTimeout(() => {
+    if (mode !== MODE.PLAY_ONLINE || gameWinner) return;
+    net.guestHp = 100;
+    remotePlayer.group.visible = true;
+    remotePlayer.group.position.set(0, 0, -25);
+    if (net.conn && net.connected) {
+      net.conn.send({ t:'respawn', x:0, z:-25 });
+    }
+  }, 3000);
+}
+function killHost() {
+  remotePlayer.group.visible = false;
+  if (!net.isHost) {
+    net.guestScore++;
+    showKillMsg(net.myName, net.otherName);
+  }
+  updateScoreboard();
+  checkWinCondition();
+  setTimeout(() => {
+    if (mode !== MODE.PLAY_ONLINE || gameWinner) return;
+    net.hostHp = 100;
+    remotePlayer.group.visible = true;
+    remotePlayer.group.position.set(0, 0, 25);
+    if (net.conn && net.connected) {
+      net.conn.send({ t:'respawn', x:0, z:25 });
+    }
+  }, 3000);
+}
+
+function enterOnlineGame(myX, myZ, otherX, otherZ, myYaw, otherYaw) {
   mode = MODE.PLAY_ONLINE;
   net.isOnline = true;
   document.body.classList.add('ingame-online');
 
   player.pos.set(myX, 0, myZ);
-  player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
+  player.vy = 0; player.yaw = myYaw; player.pitch = 0;
   player.hp = 100; player.alive = true;
   player.weapon = 'rifle';
   player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
   player.grenades = 1;
+  player.isCrouching = false;
+  player.isReloading = false;
+  player.isScoped = false;
 
   remotePlayer.group.position.set(otherX, 0, otherZ);
+  remotePlayer.group.rotation.y = otherYaw;
   remotePlayer.group.visible = true;
   bot.group.visible = false;
   net.hostHp = 100; net.guestHp = 100;
@@ -2621,49 +2665,35 @@ function enterOnlineGame(myX, myZ, otherX, otherZ) {
   netBadge.className = net.isHost ? 'host' : '';
   otherNameEl.textContent = net.otherName;
   otherHpEl.textContent = 100;
-  updateHpUI();
-  updateAmmoUI();
-  updateWeaponVisual();
-  updateScoreboard();
+  setWeaponVisible('rifle');
+  updateHpUI(); updateAmmoUI(); updateScoreboard();
 
   clock.getDelta();
   startNetTick();
 }
 
 function updateScoreboard() {
-  scoreboard.textContent = `${net.myName}: ${net.isHost?net.hostScore:net.guestScore} | ${net.otherName}: ${net.isHost?net.guestScore:net.hostScore}`;
+  const my = net.isHost ? net.hostScore : net.guestScore;
+  const other = net.isHost ? net.guestScore : net.hostScore;
+  scoreboard.textContent = `${net.myName}: ${my} | ${net.otherName}: ${other}`;
 }
 
 function checkWinCondition() {
   if (gameWinner) return;
-  if (net.firstBlood) {
-    // Победа уже назначена в момент первого попадания
-    if (gameWinner) {
-      player.alive = false;
-      const isWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
-      document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
-      document.getElementById('winTitle').textContent = isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
-      document.getElementById('winTitle').style.color = isWin ? '#00ff00' : '#ff3333';
-      document.getElementById('winScore').textContent = `Счёт: ${net.isHost?net.hostScore:net.guestScore} : ${net.isHost?net.guestScore:net.hostScore}`;
-      document.getElementById('winStats').textContent = 'Матч окончен (первая кровь)';
-      document.getElementById('winOverlay').classList.add('show');
-    }
-    return;
-  }
-
+  if (net.firstBlood) return; // обрабатывается в died
   if (net.hostScore >= net.targetKills) gameWinner = 'host';
   else if (net.guestScore >= net.targetKills) gameWinner = 'guest';
+  if (!gameWinner) return;
 
-  if (gameWinner) {
-    player.alive = false;
-    const isWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
-    document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
-    document.getElementById('winTitle').textContent = isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
-    document.getElementById('winTitle').style.color = isWin ? '#00ff00' : '#ff3333';
-    document.getElementById('winScore').textContent = `Счёт: ${net.isHost?net.hostScore:net.guestScore} : ${net.isHost?net.guestScore:net.hostScore}`;
-    document.getElementById('winStats').textContent = '';
-    document.getElementById('winOverlay').classList.add('show');
-  }
+  player.alive = false;
+  input.fire = false; input.moveX = 0; input.moveY = 0;
+  const isWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
+  document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
+  document.getElementById('winTitle').textContent = isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
+  document.getElementById('winTitle').style.color = isWin ? '#00ff00' : '#ff3333';
+  document.getElementById('winScore').textContent = `Счёт: ${net.hostScore} : ${net.guestScore}`;
+  document.getElementById('winStats').textContent = '';
+  document.getElementById('winOverlay').classList.add('show');
 }
 
 let netTickInterval = null;
@@ -2672,7 +2702,15 @@ function startNetTick() {
   netTickInterval = setInterval(() => {
     if (!net.connected || mode !== MODE.PLAY_ONLINE) return;
     if (net.isHost) {
-      const guestState = { pos: remotePlayer.group.position, vy: 0, yaw: net.guestInput.yaw, onGround: true };
+      const guestState = {
+        pos: remotePlayer.group.position,
+        vy: 0, yaw: net.guestInput.yaw,
+        onGround: true,
+      };
+      if (net.guestInput.jump) {
+        tryJump(guestState);
+        net.guestInput.jump = false;
+      }
       stepPlayerPhysics(guestState, net.guestInput, TICK_MS/1000, net.guestInput.crouch);
       remotePlayer.group.rotation.y = guestState.yaw;
       if (net.guestInput.fire) {
@@ -2684,16 +2722,21 @@ function startNetTick() {
           spawnTracer(from, to, 0xff6644);
         }
       }
-      net.conn.send({ t:'state', host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, alive: player.alive } });
+      // Не отправляем state каждый тик — только позицию хоста
+      net.conn.send({ t:'state',
+        hostHp: net.hostHp, guestHp: net.guestHp,
+        host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, alive: player.alive } });
     } else {
+      const jumpFlag = player._jumpPending === true;
+      player._jumpPending = false;
       net.conn.send({
         t:'input',
         mx: input.moveX, my: input.moveY,
         yaw: player.yaw, pitch: player.pitch, fire: input.fire,
-        weapon: player.weapon, crouch: player.isCrouching,
+        weapon: player.weapon, crouch: player.isCrouching, jump: jumpFlag,
       });
       const snap = net.lastSnapshot;
-      if (!snap) return;
+      if (!snap || !snap.host) return;
       const cp = remotePlayer.group.position;
       cp.x += (snap.host.x - cp.x) * 0.3;
       cp.y += (snap.host.y - cp.y) * 0.3;
@@ -2703,17 +2746,12 @@ function startNetTick() {
     }
   }, TICK_MS);
 }
-
 function stopNetTick() { if (netTickInterval) { clearInterval(netTickInterval); netTickInterval = null; } }
 
 /* ========== ПЕРЕХОДЫ ========== */
 function startSoloGame() {
-  // Если 10 уровень — показать выбор сложности
   const lvl = getLevel(progress.xp);
-  if (lvl >= 10) {
-    showDifficultyPicker();
-    return;
-  }
+  if (lvl >= 10) { showDifficultyPicker(); return; }
   applyBotLevel(lvl);
   doStartSoloGame();
 }
@@ -2730,10 +2768,10 @@ function doStartSoloGame() {
   bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
   bot.group.rotation.x = 0;
   bot.hp = bot.maxHp;
-  netBadge.textContent = 'ОДИНОЧНЫЙ';
-  netBadge.className = '';
-  scoreboard.style.display = 'none';
-  document.getElementById('otherHud').style.display = 'none';
+  bot.state = BOT_STATE.PATROL;
+  bot.hasSeenPlayer = false;
+  bot.path = null;
+  bot.patrolTarget = null;
 
   player.pos.set(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z);
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
@@ -2742,9 +2780,12 @@ function doStartSoloGame() {
   player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
   player.isReloading = false; player.isCrouching = false; player.isScoped = false;
   player.inspecting = false;
-  updateHpUI(); updateAmmoUI(); updateWeaponVisual();
+  setWeaponVisible('rifle');
+  updateHpUI(); updateAmmoUI();
   camera.fov = 70; camera.updateProjectionMatrix();
   scopeOverlay.classList.remove('show');
+  document.getElementById('zoomBtn').classList.remove('active');
+  document.getElementById('crouchBtn').classList.remove('active');
 
   input.fire = false; input.moveX = 0; input.moveY = 0;
   clock.getDelta();
@@ -2778,12 +2819,7 @@ function exitToMenu() {
   document.getElementById('winOverlay').classList.remove('show');
   document.getElementById('difficultyModal').style.display = 'none';
   mode = MODE.MENU;
-
-  if (net.peer) { try { net.peer.destroy(); } catch(e){} net.peer = null; }
-  if (net.conn) { try { net.conn.close(); } catch(e){} net.conn = null; }
-  net.connected = false;
-  net.isOnline = false;
-  net.isHost = false;
+  destroyPeer();
   gameWinner = null;
   remotePlayer.group.visible = false;
   bot.group.visible = false;
@@ -2792,7 +2828,6 @@ function exitToMenu() {
   clock.getDelta();
 }
 
-/* Кнопки */
 document.getElementById('playBtn').addEventListener('click', startSoloGame);
 document.getElementById('netBtn').addEventListener('click', () => {
   document.getElementById('netModal').classList.add('show');
@@ -2801,9 +2836,7 @@ document.getElementById('netBtn').addEventListener('click', () => {
 });
 document.getElementById('exitBtn').addEventListener('click', exitToMenu);
 document.getElementById('netClose').addEventListener('click', () => {
-  if (net.peer) { try { net.peer.destroy(); } catch(e){} net.peer = null; }
-  if (net.conn) { try { net.conn.close(); } catch(e){} net.conn = null; }
-  net.connected = false;
+  destroyPeer();
   document.getElementById('netModal').classList.remove('show');
 });
 document.getElementById('hostBtn').addEventListener('click', () => {
@@ -2811,7 +2844,7 @@ document.getElementById('hostBtn').addEventListener('click', () => {
   showView('createNickView');
   document.getElementById('hostNameInput').focus();
 });
-document.getElementById('createRoomBtn').addEventListener('click', createRoom);
+document.getElementById('createRoomBtn').addEventListener('click', () => createRoom(false));
 document.getElementById('createBackBtn').addEventListener('click', () => showView('netStartView'));
 document.getElementById('joinBtn').addEventListener('click', () => {
   setNetStatus('ВВЕДИ КОД КОМНАТЫ', '');
@@ -2822,15 +2855,17 @@ document.getElementById('joinConnectBtn').addEventListener('click', joinRoom);
 document.getElementById('joinCancelBtn').addEventListener('click', () => showView('netStartView'));
 document.getElementById('copyCodeBtn').addEventListener('click', () => {
   const code = displayRoomCode(net.roomCode);
-  navigator.clipboard.writeText(code).then(() => {
-    document.getElementById('copyCodeBtn').textContent = '✓ СКОПИРОВАНО';
-    setTimeout(() => document.getElementById('copyCodeBtn').textContent = '📋 КОПИРОВАТЬ КОД', 1500);
-  });
+  const btn = document.getElementById('copyCodeBtn');
+  const restore = () => setTimeout(() => btn.textContent = '📋 КОПИРОВАТЬ КОД', 1500);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => { btn.textContent = '✓ СКОПИРОВАНО'; restore(); })
+      .catch(() => { btn.textContent = code; restore(); });
+  } else {
+    btn.textContent = code; restore();
+  }
 });
 document.getElementById('hostCancelBtn').addEventListener('click', () => {
-  if (net.peer) { try { net.peer.destroy(); } catch(e){} net.peer = null; }
-  if (net.conn) { try { net.conn.close(); } catch(e){} net.conn = null; }
-  net.connected = false;
+  destroyPeer();
   showView('netStartView');
 });
 document.getElementById('deathMenu').addEventListener('click', exitToMenu);
@@ -2845,6 +2880,13 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   const now = performance.now();
+
+  // Оружие видно только в игре
+  const inGame = (mode !== MODE.MENU);
+  for (const k in weaponModels) {
+    if (!inGame) weaponModels[k].visible = false;
+    else weaponModels[k].visible = (k === player.weapon);
+  }
 
   if (mode === MODE.MENU) {
     menuCam.angle += menuCam.speed * dt;
@@ -2867,17 +2909,14 @@ function animate() {
     const lookDir = new THREE.Vector3(-Math.sin(player.yaw)*cp, Math.sin(player.pitch), -Math.cos(player.yaw)*cp);
     camera.lookAt(camera.position.clone().add(lookDir));
 
-    // Перезарядка
     if (player.isReloading && now >= player.reloadEndTime) {
       player.isReloading = false;
       player.ammo[player.weapon] = WEAPON_STATS[player.weapon].magSize;
       updateAmmoUI();
     }
-    // Осмотр
     if (player.inspecting && now >= player.inspectEndTime) {
       player.inspecting = false;
     }
-    // Анимация оружия: осмотр = вращение, перезарядка = опускание
     const activeModel = weaponModels[player.weapon];
     if (activeModel) {
       if (player.inspecting) {
@@ -2903,7 +2942,7 @@ function animate() {
     }
     if (enemyPos) {
       const sp = enemyPos.clone().project(camera);
-      if (sp.z < 1) {
+      if (sp.z > -1 && sp.z < 1) {
         enemyHpBar.style.left = (sp.x*0.5+0.5) * window.innerWidth + 'px';
         enemyHpBar.style.top = (-sp.y*0.5+0.5) * window.innerHeight + 'px';
         enemyHpBar.classList.add('show');
@@ -2915,18 +2954,21 @@ function animate() {
       enemyHpBar.classList.remove('show');
     }
 
-    // Трассеры
+    // Обновление otherHud
+    if (mode === MODE.PLAY_ONLINE) {
+      otherHpEl.textContent = Math.round(net.isHost ? net.guestHp : net.hostHp);
+    }
+
     for (let i = tracers.length-1; i >= 0; i--) {
       const t = tracers[i];
       const age = now - t.born;
-      const life = t.isFlash ? 130 : 90;
-      if (age > life) {
+      if (age > 90) {
         scene.remove(t.line);
         t.line.geometry.dispose();
         t.line.material.dispose();
         tracers.splice(i, 1);
       } else {
-        t.line.material.opacity = 1 - age/life;
+        t.line.material.opacity = 1 - age/90;
       }
     }
   }
@@ -2944,7 +2986,10 @@ addEventListener('keydown', e => {
   if (e.key === ' ') input.fire = true;
   if (e.key === 'Shift') tryJump(player);
   if (e.key === 'r' || e.key === 'R') handleReload();
-  if (e.key === 'c' || e.key === 'C') { player.isCrouching = !player.isCrouching; document.getElementById('crouchBtn').classList.toggle('active', player.isCrouching); }
+  if (e.key === 'c' || e.key === 'C') {
+    player.isCrouching = !player.isCrouching;
+    document.getElementById('crouchBtn').classList.toggle('active', player.isCrouching);
+  }
 });
 addEventListener('keyup', e => {
   if ((e.key === 'w' || e.key === 'W') && input.moveY === -1) input.moveY = 0;
@@ -2955,7 +3000,7 @@ addEventListener('keyup', e => {
 });
 addEventListener('mousedown', e => {
   if (mode === MODE.MENU) return;
-  if (e.target.closest('#fire, #jump, #exitBtn, #deathOverlay, #netModal, #winOverlay, #difficultyModal, #crouchBtn, #zoomBtn, #swapBtn, #reloadBtn')) return;
+  if (e.target.closest('#fire, #jump, #exitBtn, #deathOverlay, #netModal, #winOverlay, #difficultyModal, #crouchBtn, #zoomBtn, #swapBtn, #reloadBtn, #menu, #layoutEditor')) return;
   mouseDown = true;
 });
 addEventListener('mouseup', () => mouseDown = false);
@@ -2974,4 +3019,4 @@ updateProgressUI();
 animate();
 </script>
 </body>
-   </html>
+ </html>
