@@ -622,7 +622,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 2.7 · P2P<br>
+      ВЕРСИЯ 2.8 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -814,7 +814,7 @@ const PEER_PATH = '/';
 const PEER_SECURE = true;
 
 /* ============================================================
-   ПРОГРЕССИЯ
+   ПРОГРЕССИЯ И XP
    ============================================================ */
 const LEVELS = [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000];
 const RANKS = [
@@ -829,20 +829,34 @@ function getLevel(xp) {
   for (let i = LEVELS.length - 1; i >= 0; i--) if (xp >= LEVELS[i]) return i;
   return 0;
 }
+
+// Таблица наград за победу: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 function getXpForWin(level) {
-  if (level >= 10) return 0;
-  const map = [30, 25, 20, 15, 15, 15, 15, 15, 15, 10];
-  return map[level];
+  const map = [35, 30, 30, 30, 25, 25, 25, 25, 25, 20];
+  return level >= 10 ? 0 : map[level];
 }
+
+// Таблица штрафа за поражение/выход: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+function getXpForLoss(level) {
+  const map = [-15, -15, -15, -15, -15, -15, -15, -15, -15, -20];
+  return level >= 10 ? 0 : map[level];
+}
+
 function addXp(amount) {
-  if (amount <= 0) return;
+  if (amount === 0) return;
   const oldLevel = getLevel(progress.xp);
-  progress.xp = Math.min(2000, progress.xp + amount);
+  progress.xp = Math.max(0, Math.min(2000, progress.xp + amount)); // Защита от минуса и переполнения
   const newLevel = getLevel(progress.xp);
   localStorage.setItem('zs_xp', progress.xp);
   updateProgressUI();
-  if (newLevel > oldLevel) showToast(`🎉 УРОВЕНЬ ${newLevel}! ${RANKS[newLevel]}`);
+  
+  if (newLevel > oldLevel) {
+    showToast(`🎉 УРОВЕНЬ ${newLevel}! ${RANKS[newLevel]}`);
+  } else if (newLevel < oldLevel) {
+    showToast(`📉 УРОВЕНЬ УПАЛ ДО ${newLevel}`);
+  }
 }
+
 function updateProgressUI() {
   const lvl = getLevel(progress.xp);
   document.getElementById('lvlNum').textContent = lvl;
@@ -2527,6 +2541,8 @@ function winSolo() {
   dualRespawnToken++;
   if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   matchStats.active = false;
+  
+  // НАГРАДА XP ЗА ПОБЕДУ
   const lvl = getLevel(progress.xp);
   const xp = getXpForWin(lvl);
   if (xp > 0) addXp(xp);
@@ -2535,7 +2551,11 @@ function winSolo() {
   document.getElementById('winTitle').textContent = 'ПОБЕДА!';
   document.getElementById('winTitle').style.color = '#00ff00';
   document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
-  document.getElementById('winStats').textContent = `+${xp} XP`;
+  
+  const winStatsEl = document.getElementById('winStats');
+  winStatsEl.textContent = `+${xp} XP`;
+  winStatsEl.style.color = '#ffaa44';
+  
   fillMatchStatsOverlay();
   document.getElementById('winOverlay').classList.add('show');
 }
@@ -2549,12 +2569,21 @@ function loseSolo(killerName) {
   if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   matchStats.active = false;
 
+  // ШТРАФ XP ЗА ПОРАЖЕНИЕ
+  const lvl = getLevel(progress.xp);
+  const xpLoss = getXpForLoss(lvl);
+  addXp(xpLoss);
+
   document.getElementById('deathOverlay').classList.remove('show');
   document.getElementById('winIcon').textContent = '💀';
   document.getElementById('winTitle').textContent = 'ПОРАЖЕНИЕ';
   document.getElementById('winTitle').style.color = '#ff3333';
   document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
-  document.getElementById('winStats').textContent = '0 XP';
+  
+  const winStatsEl = document.getElementById('winStats');
+  winStatsEl.textContent = `${xpLoss} XP`;
+  winStatsEl.style.color = '#ff5555';
+  
   fillMatchStatsOverlay();
   document.getElementById('winOverlay').classList.add('show');
 }
@@ -3133,12 +3162,21 @@ function checkWinCondition() {
   dualRespawnToken++;
   if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   matchStats.active = false;
+  
   const isWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
+  const lvl = getLevel(progress.xp);
+  const xp = isWin ? getXpForWin(lvl) : getXpForLoss(lvl);
+  addXp(xp);
+
   document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
   document.getElementById('winTitle').textContent = isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
   document.getElementById('winTitle').style.color = isWin ? '#00ff00' : '#ff3333';
   document.getElementById('winScore').textContent = `Счёт: ${net.hostScore} : ${net.guestScore}`;
-  document.getElementById('winStats').textContent = '';
+  
+  const winStatsEl = document.getElementById('winStats');
+  winStatsEl.textContent = `${xp > 0 ? '+' : ''}${xp} XP`;
+  winStatsEl.style.color = isWin ? '#ffaa44' : '#ff5555';
+
   fillMatchStatsOverlay();
   document.getElementById('winOverlay').classList.add('show');
 }
@@ -3264,6 +3302,14 @@ function showDifficultyPicker() {
 }
 
 function exitToMenu() {
+  // ШТРАФ XP ЗА ВЫХОД ВО ВРЕМЯ МАТЧА
+  if ((mode === MODE.PLAY_SOLO || mode === MODE.PLAY_ONLINE) && !gameWinner) {
+    const lvl = getLevel(progress.xp);
+    const xpLoss = getXpForLoss(lvl);
+    addXp(xpLoss);
+    showToast(`📉 Выход из игры: ${xpLoss} XP`);
+  }
+
   stopNetTick();
   document.body.classList.remove('ingame');
   document.body.classList.remove('ingame-online');
