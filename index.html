@@ -347,6 +347,7 @@
   body.ingame #killfeed { display:flex; }
   body.ingame-online #scoreboard { display:block; }
   body.ingame-online #otherHud { display:block; }
+  body.ingame-solo #scoreboard { display:block; }
 
   .game-btn {
     position: fixed;
@@ -591,7 +592,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 2.0 · P2P<br>
+      ВЕРСИЯ 2.1 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -789,6 +790,7 @@ function getXpForWin(level) {
   return map[level];
 }
 function addXp(amount) {
+  if (amount <= 0) return;
   const oldLevel = getLevel(progress.xp);
   progress.xp = Math.min(2000, progress.xp + amount);
   const newLevel = getLevel(progress.xp);
@@ -824,7 +826,7 @@ document.getElementById('resetProgressBtn').addEventListener('click', () => {
 });
 
 /* ============================================================
-   НАСТРОЙКИ И РАСКЛАДКА (в процентах — не зависит от resize)
+   НАСТРОЙКИ И РАСКЛАДКА
    ============================================================ */
 function makeDefaultLayout() {
   const W = window.innerWidth, H = window.innerHeight;
@@ -837,7 +839,6 @@ function makeDefaultLayout() {
     zoomBtn:   { xp: (W - 310) / W, yp: (H - 200) / H, size: 80 },
   };
 }
-
 const storedLayout = JSON.parse(localStorage.getItem('zs_layout') || 'null');
 const userSettings = {
   sensitivity: parseFloat(localStorage.getItem('zs_sens')) || 1.0,
@@ -846,7 +847,6 @@ const userSettings = {
     ? storedLayout
     : makeDefaultLayout(),
 };
-
 const LOOK_SENS_BASE = 0.006;
 let LOOK_SENS = LOOK_SENS_BASE * userSettings.sensitivity;
 
@@ -920,7 +920,6 @@ document.getElementById('layoutEditorBtn').addEventListener('click', () => {
     layoutContainer.appendChild(el);
   });
 });
-
 document.getElementById('layoutSaveBtn').addEventListener('click', () => {
   isEditingLayout = false;
   layoutEditor.classList.remove('show');
@@ -1231,7 +1230,6 @@ let colliders = [], tracers = [], grenades = [], bloodParticles = [];
 let raycaster;
 let player, remotePlayer, bot;
 let weaponModels = {};
-let menuWeaponHolder = null;
 
 const hpEl = document.getElementById('hp');
 const ammoEl = document.getElementById('ammoHud');
@@ -1263,6 +1261,7 @@ const net = {
 const MODE = { MENU: 0, PLAY_SOLO: 1, PLAY_ONLINE: 2 };
 let mode = MODE.MENU;
 let gameWinner = null;
+const soloStats = { kills: 0, deaths: 0, targetKills: 16, targetDeaths: 16 };
 
 const PLAYER_HEIGHT = 1.6;
 const CROUCH_HEIGHT = 1.1;
@@ -1779,7 +1778,6 @@ jumpBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
   if (mode !== MODE.MENU && player.alive) {
     if (mode === MODE.PLAY_ONLINE && !net.isHost) {
-      // Гость — шлёт input jump
       player._jumpPending = true;
     } else {
       tryJump(player);
@@ -1927,7 +1925,6 @@ function tryShoot() {
   if (mode === MODE.PLAY_SOLO && bot.alive) {
     targets.push(bot.hitHead, bot.hitBody);
   }
-  // стены/ящики — реальные меши
   for (let i = 0; i < colliders.length; i++) {
     if (colliders[i].mesh) targets.push(colliders[i].mesh);
   }
@@ -1952,7 +1949,6 @@ function tryShoot() {
     bot.lastDamaged = now;
     if (bot.hp <= 0 && bot.alive) killBot();
   } else if (mode === MODE.PLAY_ONLINE) {
-    // стреляем в remotePlayer. У хоста remotePlayer = гость. У гостя = хост.
     if (net.conn && net.connected) {
       net.conn.send({ t:'dmg', dmg, head: isHead });
     }
@@ -1965,10 +1961,15 @@ function killBot() {
   bot.group.rotation.x = -Math.PI/2;
   bot.group.position.y = -0.6;
   bot.respawnAt = performance.now() + 3000;
-  const lvl = getLevel(progress.xp);
-  const xp = getXpForWin(lvl);
-  if (xp > 0) addXp(xp);
   showKillMsg('Ты', 'БОТ');
+
+  if (mode === MODE.PLAY_SOLO && !gameWinner) {
+    soloStats.kills++;
+    updateSoloScoreboard();
+    if (soloStats.kills >= soloStats.targetKills) {
+      winSolo();
+    }
+  }
 }
 
 function showKillMsg(killer, victim) {
@@ -2087,20 +2088,47 @@ function dieLocal(killerName) {
   input.fire = false;
   input.moveX = 0; input.moveY = 0;
   document.getElementById('deathKiller').textContent = killerName;
-  document.getElementById('deathOverlay').classList.add('show');
 
-  if (mode === MODE.PLAY_ONLINE) {
-    if (net.isHost) net.hostDeaths++;
-    else net.guestDeaths++;
-    // сообщаем другому о смерти — он засчитает себе килл
-    if (net.conn && net.connected) {
-      net.conn.send({ t:'died', by: killerName });
+  if (mode === MODE.PLAY_SOLO) {
+    if (gameWinner) return;
+    soloStats.deaths++;
+    updateSoloScoreboard();
+    if (soloStats.deaths >= soloStats.targetDeaths) {
+      loseSolo(killerName);
+      return;
     }
+    document.getElementById('deathOverlay').classList.add('show');
     setTimeout(() => {
+      if (gameWinner || mode !== MODE.PLAY_SOLO) return;
       document.getElementById('deathOverlay').classList.remove('show');
-      if (!gameWinner) respawnLocal();
+      respawnLocal();
+      respawnBotNow();
     }, 3000);
+    return;
   }
+
+  document.getElementById('deathOverlay').classList.add('show');
+  if (net.isHost) net.hostDeaths++;
+  else net.guestDeaths++;
+  if (net.conn && net.connected) {
+    net.conn.send({ t:'died', by: killerName });
+  }
+  setTimeout(() => {
+    document.getElementById('deathOverlay').classList.remove('show');
+    if (!gameWinner) respawnLocal();
+  }, 3000);
+}
+
+function respawnBotNow() {
+  bot.alive = true;
+  bot.hp = bot.maxHp;
+  bot.group.rotation.x = 0;
+  bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
+  bot.state = BOT_STATE.PATROL;
+  bot.hasSeenPlayer = false;
+  bot.path = null;
+  bot.patrolTarget = null;
+  bot.respawnAt = 0;
 }
 
 function respawnLocal() {
@@ -2118,19 +2146,62 @@ function respawnLocal() {
   player.ammo = { rifle: 30, shotgun: 8, sniper: 5 };
   player.grenades = 1;
   player.vy = 0; player.onGround = true;
+  player.isCrouching = false;
+  player.isReloading = false;
+  player.isScoped = false;
+  player.inspecting = false;
+  setWeaponVisible(player.weapon);
+  camera.fov = 70; camera.updateProjectionMatrix();
+  scopeOverlay.classList.remove('show');
+  document.getElementById('crouchBtn').classList.remove('active');
+  document.getElementById('zoomBtn').classList.remove('active');
   updateHpUI(); updateAmmoUI();
+}
+
+function updateSoloScoreboard() {
+  if (mode !== MODE.PLAY_SOLO) return;
+  scoreboard.textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
+  scoreboard.style.display = 'block';
+}
+
+function winSolo() {
+  if (gameWinner) return;
+  gameWinner = 'player';
+  player.alive = false;
+  input.fire = false; input.moveX = 0; input.moveY = 0;
+  const lvl = getLevel(progress.xp);
+  const xp = getXpForWin(lvl);
+  if (xp > 0) addXp(xp);
+
+  document.getElementById('winIcon').textContent = '🏆';
+  document.getElementById('winTitle').textContent = 'ПОБЕДА!';
+  document.getElementById('winTitle').style.color = '#00ff00';
+  document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
+  document.getElementById('winStats').textContent = `+${xp} XP`;
+  document.getElementById('winOverlay').classList.add('show');
+}
+
+function loseSolo(killerName) {
+  if (gameWinner) return;
+  gameWinner = 'bot';
+  player.alive = false;
+  input.fire = false; input.moveX = 0; input.moveY = 0;
+
+  document.getElementById('deathOverlay').classList.remove('show');
+  document.getElementById('winIcon').textContent = '💀';
+  document.getElementById('winTitle').textContent = 'ПОРАЖЕНИЕ';
+  document.getElementById('winTitle').style.color = '#ff3333';
+  document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
+  document.getElementById('winStats').textContent = '0 XP';
+  document.getElementById('winOverlay').classList.add('show');
 }
 
 /* ========== AI БОТА ========== */
 function updateBot(dt, now) {
+  if (gameWinner) return;
   if (!bot.alive) {
     if (now >= bot.respawnAt) {
-      bot.alive = true; bot.hp = bot.maxHp;
-      bot.group.rotation.x = 0;
-      bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
-      bot.state = BOT_STATE.PATROL;
-      bot.hasSeenPlayer = false;
-      bot.path = null;
+      respawnBotNow();
     }
     return;
   }
@@ -2197,7 +2268,6 @@ function updateBot(dt, now) {
     }
     moveBotAlongPath(bot, dt, 1);
   } else {
-    // PATROL
     if (!bot.patrolTarget || Math.hypot(bot.patrolTarget.x - bp.x, bot.patrolTarget.z - bp.z) < 1.2) {
       if (bot.patrolWaitUntil && now < bot.patrolWaitUntil) {
         turnTowards(bot, bot.facing + dt * 1.5, dt, 10);
@@ -2546,19 +2616,15 @@ function handlePeerData(data) {
         net.lastSnapshotTime = performance.now();
         if (data.hostHp !== undefined) { net.hostHp = data.hostHp; }
         if (data.guestHp !== undefined) { net.guestHp = data.guestHp; }
-        if (net.isHost) otherHpEl.textContent = net.guestHp;
-        else otherHpEl.textContent = net.hostHp;
+        otherHpEl.textContent = net.hostHp;
       }
       break;
 
     case 'dmg':
-      // Пришёл урон за наш удар по получателю. Если мы хост — гость стреляет в нас.
-      // Если мы гость — хост стреляет в нас.
       if (net.isHost) {
         net.guestHp -= data.dmg;
         if (net.guestHp < 0) net.guestHp = 0;
         if (net.guestHp <= 0 && remotePlayer.group.visible) {
-          // гость убит — нам килл
           killGuest();
         }
         net.conn.send({ t:'state', hostHp: net.hostHp, guestHp: net.guestHp,
@@ -2575,7 +2641,6 @@ function handlePeerData(data) {
       break;
 
     case 'died':
-      // Другой игрок умер. Засчитываем себе килл.
       if (net.isHost) {
         net.hostScore++;
         showKillMsg(net.myName, net.otherName);
@@ -2587,8 +2652,13 @@ function handlePeerData(data) {
       checkWinCondition();
       break;
 
+    case 'hp':
+      if (data.host !== undefined) net.hostHp = data.host;
+      if (data.guest !== undefined) net.guestHp = data.guest;
+      otherHpEl.textContent = net.isHost ? net.guestHp : net.hostHp;
+      break;
+
     case 'respawn':
-      // Противник респавнится — обновляем remotePlayer
       if (data.x !== undefined && data.z !== undefined) {
         remotePlayer.group.position.set(data.x, 0, data.z);
         remotePlayer.group.visible = true;
@@ -2606,7 +2676,6 @@ function killGuest() {
   }
   updateScoreboard();
   checkWinCondition();
-  // Респавн гостя через 3 секунды
   setTimeout(() => {
     if (mode !== MODE.PLAY_ONLINE || gameWinner) return;
     net.guestHp = 100;
@@ -2640,6 +2709,7 @@ function enterOnlineGame(myX, myZ, otherX, otherZ, myYaw, otherYaw) {
   mode = MODE.PLAY_ONLINE;
   net.isOnline = true;
   document.body.classList.add('ingame-online');
+  document.body.classList.remove('ingame-solo');
 
   player.pos.set(myX, 0, myZ);
   player.vy = 0; player.yaw = myYaw; player.pitch = 0;
@@ -2676,11 +2746,13 @@ function updateScoreboard() {
   const my = net.isHost ? net.hostScore : net.guestScore;
   const other = net.isHost ? net.guestScore : net.hostScore;
   scoreboard.textContent = `${net.myName}: ${my} | ${net.otherName}: ${other}`;
+  scoreboard.style.display = 'block';
 }
 
 function checkWinCondition() {
+  if (mode === MODE.PLAY_SOLO) return;
   if (gameWinner) return;
-  if (net.firstBlood) return; // обрабатывается в died
+  if (net.firstBlood) return;
   if (net.hostScore >= net.targetKills) gameWinner = 'host';
   else if (net.guestScore >= net.targetKills) gameWinner = 'guest';
   if (!gameWinner) return;
@@ -2722,7 +2794,6 @@ function startNetTick() {
           spawnTracer(from, to, 0xff6644);
         }
       }
-      // Не отправляем state каждый тик — только позицию хоста
       net.conn.send({ t:'state',
         hostHp: net.hostHp, guestHp: net.guestHp,
         host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, alive: player.alive } });
@@ -2759,19 +2830,17 @@ function startSoloGame() {
 function doStartSoloGame() {
   mode = MODE.PLAY_SOLO;
   net.isOnline = false;
+  gameWinner = null;
+  soloStats.kills = 0;
+  soloStats.deaths = 0;
+
   menuEl.classList.add('hidden');
   document.body.classList.add('ingame');
   document.body.classList.remove('ingame-online');
+  document.body.classList.add('ingame-solo');
   remotePlayer.group.visible = false;
   bot.group.visible = true;
-  bot.alive = true;
-  bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
-  bot.group.rotation.x = 0;
-  bot.hp = bot.maxHp;
-  bot.state = BOT_STATE.PATROL;
-  bot.hasSeenPlayer = false;
-  bot.path = null;
-  bot.patrolTarget = null;
+  respawnBotNow();
 
   player.pos.set(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z);
   player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
@@ -2786,6 +2855,12 @@ function doStartSoloGame() {
   scopeOverlay.classList.remove('show');
   document.getElementById('zoomBtn').classList.remove('active');
   document.getElementById('crouchBtn').classList.remove('active');
+
+  netBadge.textContent = 'ОДИНОЧНЫЙ · ДО 16';
+  netBadge.className = '';
+  otherHpEl.textContent = 100;
+  document.getElementById('otherHud').style.display = 'none';
+  updateSoloScoreboard();
 
   input.fire = false; input.moveX = 0; input.moveY = 0;
   clock.getDelta();
@@ -2814,6 +2889,7 @@ function exitToMenu() {
   stopNetTick();
   document.body.classList.remove('ingame');
   document.body.classList.remove('ingame-online');
+  document.body.classList.remove('ingame-solo');
   menuEl.classList.remove('hidden');
   document.getElementById('deathOverlay').classList.remove('show');
   document.getElementById('winOverlay').classList.remove('show');
@@ -2821,8 +2897,11 @@ function exitToMenu() {
   mode = MODE.MENU;
   destroyPeer();
   gameWinner = null;
+  soloStats.kills = 0;
+  soloStats.deaths = 0;
   remotePlayer.group.visible = false;
   bot.group.visible = false;
+  document.getElementById('otherHud').style.display = 'block';
   camera.fov = 70; camera.updateProjectionMatrix();
   scopeOverlay.classList.remove('show');
   clock.getDelta();
@@ -2872,7 +2951,17 @@ document.getElementById('deathMenu').addEventListener('click', exitToMenu);
 document.getElementById('winMenu').addEventListener('click', exitToMenu);
 document.getElementById('winRestart').addEventListener('click', () => {
   document.getElementById('winOverlay').classList.remove('show');
-  exitToMenu();
+  if (mode === MODE.PLAY_SOLO) {
+    const lvl = getLevel(progress.xp);
+    if (lvl >= 10) {
+      exitToMenu();
+    } else {
+      applyBotLevel(lvl);
+      doStartSoloGame();
+    }
+  } else {
+    exitToMenu();
+  }
 });
 
 /* ========== ГЛАВНЫЙ ЦИКЛ ========== */
@@ -2881,7 +2970,6 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const now = performance.now();
 
-  // Оружие видно только в игре
   const inGame = (mode !== MODE.MENU);
   for (const k in weaponModels) {
     if (!inGame) weaponModels[k].visible = false;
@@ -2931,7 +3019,6 @@ function animate() {
       }
     }
 
-    // HP над врагом
     let enemyPos = null, enemyHp = 0, enemyMax = 100;
     if (mode === MODE.PLAY_SOLO && bot.alive) {
       enemyPos = bot.group.position.clone(); enemyPos.y += 2.5;
@@ -2954,7 +3041,6 @@ function animate() {
       enemyHpBar.classList.remove('show');
     }
 
-    // Обновление otherHud
     if (mode === MODE.PLAY_ONLINE) {
       otherHpEl.textContent = Math.round(net.isHost ? net.guestHp : net.hostHp);
     }
@@ -3019,4 +3105,4 @@ updateProgressUI();
 animate();
 </script>
 </body>
- </html>
+   </html>
