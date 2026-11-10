@@ -147,6 +147,26 @@
     font-family: monospace;
   }
 
+  #balanceBox {
+    background: linear-gradient(135deg, rgba(255,200,50,0.15), rgba(200,140,20,0.1));
+    border: 1px solid rgba(255,200,50,0.5);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 8px;
+    text-align: left;
+    width: 100%;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  #balanceBox .label {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+    color: #ffaa44;
+  }
+  #balanceBox .amount {
+    font: 900 20px monospace;
+    color: #ffdd44;
+    text-shadow: 0 0 12px rgba(255,220,80,0.6);
+  }
+
   .settingsPanel {
     background: rgba(0,0,0,0.7);
     padding: 24px;
@@ -385,6 +405,7 @@
     background: rgba(0,0,0,0.4); padding: 4px 16px; border-radius: 8px;
   }
   #ammoHud.reloading { color: #ffaa44; }
+  #ammoHud.gold { color: #ffdd44; text-shadow: 0 0 12px rgba(255,220,80,0.8), 0 0 6px #000; }
   #scoreboard {
     position:fixed; top:15px; left:50%; transform:translateX(-50%);
     padding: 8px 20px;
@@ -592,6 +613,96 @@
     to { opacity: 0; transform: translateY(-10px); }
   }
 
+  /* ================= МАГАЗИН ================= */
+  #shopPanel {
+    background: rgba(0,0,0,0.7);
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,200,50,0.3);
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  #shopPanel h3 {
+    font-size: 13px; font-weight: 800; letter-spacing: 1.5px;
+    color: #ffaa44;
+    text-align: left;
+    margin-bottom: 12px;
+  }
+  .skin-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,200,50,0.2);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: all 0.15s;
+  }
+  .skin-item.owned {
+    border-color: rgba(76,255,136,0.4);
+    background: rgba(76,255,136,0.05);
+  }
+  .skin-item.locked {
+    opacity: 0.6;
+  }
+  .skin-icon {
+    width: 44px; height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(255,200,50,0.3);
+  }
+  .skin-item.owned .skin-icon {
+    background: linear-gradient(135deg, rgba(255,200,50,0.3), rgba(255,150,20,0.2));
+    border-color: rgba(255,200,50,0.7);
+    box-shadow: 0 0 12px rgba(255,200,50,0.4);
+  }
+  .skin-info {
+    flex: 1; text-align: left;
+    line-height: 1.3;
+  }
+  .skin-info .name {
+    font: 900 13px monospace;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+  .skin-info .weapon {
+    font: 600 10px monospace;
+    color: #7a8299;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .skin-info .owned-label {
+    font: 800 10px monospace;
+    color: #4cff88;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .skin-item.owned .name {
+    color: #ffdd44;
+    text-shadow: 0 0 8px rgba(255,220,80,0.5);
+  }
+  .skin-buy {
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #ffaa44, #ff8822);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    font: 900 11px monospace;
+    letter-spacing: 1px;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(255,170,68,0.3);
+  }
+  .skin-buy:active { transform: scale(0.95); }
+  .skin-buy:disabled {
+    background: rgba(255,255,255,0.1);
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
   @media (orientation: portrait) {
     #menu::before {
       content:'ПОВЕРНИ УСТРОЙСТВО';
@@ -622,7 +733,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 2.4 · P2P<br>
+      ВЕРСИЯ 2.5 · P2P<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -646,6 +757,10 @@
         <div class="rank" id="rankName">—</div>
         <div id="progressBar"><div id="progressFill"></div></div>
         <div id="progressXp"><span id="xpCur">0</span> / <span id="xpMax">2000</span> XP</div>
+      </div>
+      <div id="balanceBox">
+        <span class="label">💰 МОНЕТЫ</span>
+        <span class="amount" id="coinBalance">4000</span>
       </div>
     </div>
     <div class="tabPanel" id="panel-settings">
@@ -671,10 +786,12 @@
       </div>
     </div>
     <div class="tabPanel" id="panel-shop">
-      <div class="placeholder">
-        <div class="icon">🛒</div>
-        <div class="text">Магазин</div>
-        <div class="hint">Скоро здесь можно будет купить скины и бусты</div>
+      <div id="shopPanel">
+        <h3>🏆 ЗОЛОТЫЕ СКИНЫ · 1000 МОНЕТ</h3>
+        <div id="shopList"></div>
+        <div style="font-size:10px; color:#666; text-align:center; margin-top:14px; letter-spacing:1px;">
+          Купленный скин применяется автоматически
+        </div>
       </div>
     </div>
   </div>
@@ -814,7 +931,7 @@ const PEER_PATH = '/';
 const PEER_SECURE = true;
 
 /* ============================================================
-   ПРОГРЕССИЯ
+   ПРОГРЕССИЯ И МОНЕТЫ
    ============================================================ */
 const LEVELS = [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000];
 const RANKS = [
@@ -824,6 +941,41 @@ const RANKS = [
 ];
 
 const progress = { xp: parseInt(localStorage.getItem('zs_xp')) || 0 };
+const wallet = { coins: parseInt(localStorage.getItem('zs_coins') ?? '4000') };
+if (isNaN(wallet.coins)) wallet.coins = 4000;
+
+const SKIN_PRICE = 1000;
+const SKIN_IDS = ['gold_rifle', 'gold_shotgun', 'gold_sniper', 'gold_knife', 'gold_grenade'];
+const SKIN_META = {
+  gold_rifle:   { name: 'ЗОЛОТОЙ АК',      weapon: 'rifle',   icon: '🔫' },
+  gold_shotgun: { name: 'ЗОЛОТОЙ ДРОБ',    weapon: 'shotgun', icon: '💥' },
+  gold_sniper:  { name: 'ЗОЛОТАЯ СНАЙПА',  weapon: 'sniper',  icon: '🎯' },
+  gold_knife:   { name: 'ЗОЛОТОЙ НОЖ',     weapon: 'knife',   icon: '🗡️' },
+  gold_grenade: { name: 'ЗОЛОТАЯ ГРАНАТА', weapon: 'grenade', icon: '💣' },
+};
+
+const skins = {
+  owned: JSON.parse(localStorage.getItem('zs_skins') || '[]'),
+};
+if (!Array.isArray(skins.owned)) skins.owned = [];
+
+function saveCoins() {
+  localStorage.setItem('zs_coins', wallet.coins);
+}
+function saveSkins() {
+  localStorage.setItem('zs_skins', JSON.stringify(skins.owned));
+}
+function hasSkin(id) {
+  return skins.owned.includes(id);
+}
+function getEquippedSkinFor(weapon) {
+  if (weapon === 'rifle' && hasSkin('gold_rifle')) return 'gold';
+  if (weapon === 'shotgun' && hasSkin('gold_shotgun')) return 'gold';
+  if (weapon === 'sniper' && hasSkin('gold_sniper')) return 'gold';
+  if (weapon === 'knife' && hasSkin('gold_knife')) return 'gold';
+  if (weapon === 'grenade' && hasSkin('gold_grenade')) return 'gold';
+  return 'default';
+}
 
 function getLevel(xp) {
   for (let i = LEVELS.length - 1; i >= 0; i--) if (xp >= LEVELS[i]) return i;
@@ -854,6 +1006,10 @@ function updateProgressUI() {
   document.getElementById('xpCur').textContent = progress.xp;
   document.getElementById('xpMax').textContent = 2000;
 }
+function updateCoinsUI() {
+  const el = document.getElementById('coinBalance');
+  if (el) el.textContent = wallet.coins;
+}
 function showToast(text) {
   const el = document.createElement('div');
   el.className = 'toast';
@@ -862,13 +1018,72 @@ function showToast(text) {
   setTimeout(() => el.remove(), 3000);
 }
 document.getElementById('resetProgressBtn').addEventListener('click', () => {
-  if (confirm('Точно сбросить прогресс? Уровень и XP обнулятся.')) {
+  if (confirm('Точно сбросить прогресс? Уровень, XP, монеты и скины обнулятся.')) {
     progress.xp = 0;
+    wallet.coins = 4000;
+    skins.owned = [];
     localStorage.setItem('zs_xp', 0);
+    localStorage.setItem('zs_coins', 4000);
+    localStorage.setItem('zs_skins', '[]');
     updateProgressUI();
+    updateCoinsUI();
+    renderShop();
+    applyAllSkins();
     alert('Прогресс сброшен.');
   }
 });
+
+/* ============================================================
+   МАГАЗИН
+   ============================================================ */
+function renderShop() {
+  const list = document.getElementById('shopList');
+  if (!list) return;
+  list.innerHTML = '';
+  SKIN_IDS.forEach(id => {
+    const meta = SKIN_META[id];
+    const owned = hasSkin(id);
+    const item = document.createElement('div');
+    item.className = 'skin-item' + (owned ? ' owned' : '');
+    item.innerHTML = `
+      <div class="skin-icon">${meta.icon}</div>
+      <div class="skin-info">
+        <div class="name">${meta.name}</div>
+        <div class="weapon">${meta.weapon.toUpperCase()}</div>
+        ${owned ? '<div class="owned-label">✓ КУПЛЕНО</div>' : ''}
+      </div>
+    `;
+    if (!owned) {
+      const btn = document.createElement('button');
+      btn.className = 'skin-buy';
+      btn.textContent = `${SKIN_PRICE} 💰`;
+      btn.disabled = wallet.coins < SKIN_PRICE;
+      btn.addEventListener('click', () => buySkin(id));
+      item.appendChild(btn);
+    }
+    list.appendChild(item);
+  });
+}
+
+function buySkin(id) {
+  if (hasSkin(id)) return;
+  if (wallet.coins < SKIN_PRICE) {
+    showToast('❌ Не хватает монет');
+    return;
+  }
+  const meta = SKIN_META[id];
+  const ok = confirm(`Купить «${meta.name}» за ${SKIN_PRICE} монет?`);
+  if (!ok) return;
+
+  wallet.coins -= SKIN_PRICE;
+  skins.owned.push(id);
+  saveCoins();
+  saveSkins();
+  updateCoinsUI();
+  renderShop();
+  applyAllSkins();
+  showToast(`✓ Куплено: ${meta.name}`);
+}
 
 /* ============================================================
    НАСТРОЙКИ И РАСКЛАДКА
@@ -932,9 +1147,11 @@ function saveSettings() {
    ============================================================ */
 function exportProgress() {
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     xp: progress.xp,
+    coins: wallet.coins,
+    skins: skins.owned,
     sensitivity: userSettings.sensitivity,
     opacity: userSettings.opacity,
     layout: userSettings.layout,
@@ -966,6 +1183,8 @@ function importProgressFromFile(file) {
       const ok = confirm(
         `Импорт сохранения:\n` +
         `XP: ${data.xp}\n` +
+        `Монеты: ${data.coins ?? '—'}\n` +
+        `Скины: ${Array.isArray(data.skins) ? data.skins.length : 0}\n` +
         `Чувствительность: ${data.sensitivity ?? '—'}\n` +
         `Прозрачность: ${data.opacity ?? '—'}%\n\n` +
         `Текущий прогресс будет заменён. Продолжить?`
@@ -975,6 +1194,14 @@ function importProgressFromFile(file) {
       progress.xp = Math.min(2000, Math.max(0, data.xp | 0));
       localStorage.setItem('zs_xp', progress.xp);
 
+      if (typeof data.coins === 'number' && data.coins >= 0) {
+        wallet.coins = data.coins | 0;
+        saveCoins();
+      }
+      if (Array.isArray(data.skins)) {
+        skins.owned = data.skins.filter(id => SKIN_IDS.includes(id));
+        saveSkins();
+      }
       if (typeof data.sensitivity === 'number' && data.sensitivity >= 0.2 && data.sensitivity <= 3) {
         userSettings.sensitivity = data.sensitivity;
         localStorage.setItem('zs_sens', userSettings.sensitivity);
@@ -990,6 +1217,9 @@ function importProgressFromFile(file) {
 
       applySettingsToUI();
       updateProgressUI();
+      updateCoinsUI();
+      renderShop();
+      applyAllSkins();
       showToast('✓ Импорт успешён');
     } catch (err) {
       alert('Ошибка импорта: ' + err.message);
@@ -1567,6 +1797,7 @@ function initScene() {
   scene.add(camera);
 
   setWeaponVisible('rifle');
+  applyAllSkins();
   updateAmmoUI();
   updateHpUI();
 
@@ -1581,6 +1812,39 @@ function initScene() {
 
 function setWeaponVisible(name) {
   for (const k in weaponModels) weaponModels[k].visible = (k === name);
+}
+
+/* ============================================================
+   СКИНЫ — ПЕРЕКРАСКА МОДЕЛЕЙ
+   ============================================================ */
+function applyAllSkins() {
+  for (const w in weaponModels) {
+    const model = weaponModels[w];
+    const equipped = getEquippedSkinFor(w);
+    const isGold = equipped === 'gold';
+    model.traverse(child => {
+      if (child.isMesh && child.material) {
+        if (child.userData._originalMat === undefined) {
+          child.userData._originalMat = child.material;
+        }
+        if (isGold) {
+          if (!child.userData._goldMat) {
+            child.userData._goldMat = new THREE.MeshStandardMaterial({
+              color: 0xffcc33,
+              metalness: 0.95,
+              roughness: 0.15,
+              emissive: 0x553300,
+              emissiveIntensity: 0.25,
+            });
+          }
+          child.material = child.userData._goldMat;
+        } else {
+          child.material = child.userData._originalMat;
+        }
+      }
+    });
+  }
+  updateAmmoUI();
 }
 
 function createObject(w) {
@@ -2046,7 +2310,13 @@ fireBtn.addEventListener('mouseup',    () => input.fire = false);
 fireBtn.addEventListener('mouseleave', () => input.fire = false);
 
 function handleReload() {
-  if (player.weapon === 'grenade' || player.weapon === 'knife' || player.isReloading || player.inspecting) return;
+  if (player.weapon === 'grenade' || player.isReloading || player.inspecting) return;
+  if (player.weapon === 'knife') {
+    player.inspecting = true;
+    player.inspectEndTime = performance.now() + 2000;
+    sounds.reload(0, 0.5);
+    return;
+  }
   const stats = WEAPON_STATS[player.weapon];
   if (player.ammo[player.weapon] === stats.magSize) {
     player.inspecting = true;
@@ -2061,6 +2331,9 @@ function handleReload() {
 }
 function updateAmmoUI() {
   if (!player) return;
+  const equipped = getEquippedSkinFor(player.weapon);
+  ammoEl.classList.toggle('gold', equipped === 'gold');
+
   if (player.weapon === 'grenade') {
     ammoEl.textContent = `ГРАНАТА: ${player.grenades}`;
     ammoEl.classList.remove('reloading');
@@ -2104,7 +2377,6 @@ function tryKnifeAttack() {
 
   let hitSomething = false;
 
-  // 1) Проверка бота
   if (mode === MODE.PLAY_SOLO && bot.alive) {
     const bp = bot.group.position.clone();
     bp.y += 1.0;
@@ -2123,7 +2395,6 @@ function tryKnifeAttack() {
     }
   }
 
-  // 2) Проверка игрока в сети
   if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible) {
     const rp = remotePlayer.group.position.clone();
     rp.y += 1.0;
@@ -2145,7 +2416,6 @@ function tryKnifeAttack() {
   }
 
   if (!hitSomething) {
-    // Взмах в пустоту — визуал
     const end = origin.clone().add(forward.clone().multiplyScalar(KNIFE_RANGE));
     spawnTracer(origin.clone().add(forward.clone().multiplyScalar(0.5)), end, 0xddddff);
   }
@@ -2296,9 +2566,10 @@ function throwGrenade() {
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir);
   const pos = camera.position.clone().add(dir.clone().multiplyScalar(1));
+  const isGold = hasSkin('gold_grenade');
   const grenade = new THREE.Mesh(
     new THREE.SphereGeometry(0.15, 8, 6),
-    new THREE.MeshStandardMaterial({ color:0x2a3a1a, roughness:0.6 })
+    new THREE.MeshStandardMaterial({ color: isGold ? 0xffcc33 : 0x2a3a1a, metalness: isGold ? 0.95 : 0.1, roughness: isGold ? 0.15 : 0.6 })
   );
   grenade.position.copy(pos);
   grenade.userData = { vel: dir.clone().multiplyScalar(15).add(new THREE.Vector3(0, 5, 0)), born: performance.now(), exploded: false };
@@ -2486,12 +2757,15 @@ function winSolo() {
   const lvl = getLevel(progress.xp);
   const xp = getXpForWin(lvl);
   if (xp > 0) addXp(xp);
+  wallet.coins += 50;
+  saveCoins();
+  updateCoinsUI();
 
   document.getElementById('winIcon').textContent = '🏆';
   document.getElementById('winTitle').textContent = 'ПОБЕДА!';
   document.getElementById('winTitle').style.color = '#00ff00';
   document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
-  document.getElementById('winStats').textContent = `+${xp} XP`;
+  document.getElementById('winStats').textContent = `+${xp} XP · +50 💰`;
   fillMatchStatsOverlay();
   document.getElementById('winOverlay').classList.add('show');
 }
@@ -3090,11 +3364,16 @@ function checkWinCondition() {
   if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
   matchStats.active = false;
   const isWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
+  if (isWin) {
+    wallet.coins += 100;
+    saveCoins();
+    updateCoinsUI();
+  }
   document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
   document.getElementById('winTitle').textContent = isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
   document.getElementById('winTitle').style.color = isWin ? '#00ff00' : '#ff3333';
   document.getElementById('winScore').textContent = `Счёт: ${net.hostScore} : ${net.guestScore}`;
-  document.getElementById('winStats').textContent = '';
+  document.getElementById('winStats').textContent = isWin ? '+100 💰' : '';
   fillMatchStatsOverlay();
   document.getElementById('winOverlay').classList.add('show');
 }
@@ -3346,18 +3625,30 @@ function animate() {
     const activeModel = weaponModels[player.weapon];
     if (activeModel) {
       if (player.inspecting) {
-        activeModel.rotation.y = Math.sin(now * 0.003) * 0.5;
-        activeModel.rotation.x = Math.sin(now * 0.003) * 0.15;
-        activeModel.position.y = -0.08;
-        activeModel.position.z = -0.05;
+        if (player.weapon === 'knife') {
+          const t = now * 0.004;
+          activeModel.rotation.y = t;
+          activeModel.rotation.z = Math.sin(t * 1.5) * 0.3;
+          activeModel.rotation.x = 0.15;
+          activeModel.position.y = -0.05;
+          activeModel.position.z = -0.08;
+        } else {
+          activeModel.rotation.y = Math.sin(now * 0.003) * 0.5;
+          activeModel.rotation.x = Math.sin(now * 0.003) * 0.15;
+          activeModel.rotation.z = 0;
+          activeModel.position.y = -0.08;
+          activeModel.position.z = -0.05;
+        }
       } else if (player.isReloading) {
         activeModel.rotation.y = 0;
         activeModel.rotation.x = 0.35;
+        activeModel.rotation.z = 0;
         activeModel.position.y = -0.18;
         activeModel.position.z = 0;
       } else {
         activeModel.rotation.y = 0;
         activeModel.rotation.x = 0;
+        activeModel.rotation.z = 0;
         activeModel.position.y = 0;
         activeModel.position.z = 0;
       }
@@ -3446,7 +3737,10 @@ initScene();
 buildNavGrid();
 applySettingsToUI();
 updateProgressUI();
+updateCoinsUI();
+renderShop();
+applyAllSkins();
 animate();
 </script>
 </body>
-           </html>
+ </html>
