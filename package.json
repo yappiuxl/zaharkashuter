@@ -1,11 +1,15 @@
 {
-  "name": "zaharka-peer-server",
+  "name": "zaharka-shooter-server",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Authoritative server for Zaharka Shooter",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "peer": "^1.0.2"
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
