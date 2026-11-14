@@ -279,6 +279,7 @@
     letter-spacing: 8px;
     color: #ff8844;
     text-shadow: 0 0 20px rgba(255,136,68,0.6);
+    text-transform: uppercase;
   }
   .netCodeBox .hint { font-size: 11px; color:#7a8299; margin-top: 6px; }
   .netBtn {
@@ -592,6 +593,20 @@
     to { opacity: 0; transform: translateY(-10px); }
   }
 
+  #pingBadge {
+    position:fixed; top:15px; left:50%; transform:translateX(-50%) translateY(70px);
+    padding: 4px 12px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 12px;
+    font: bold 10px monospace;
+    color: #7a8299;
+    z-index: 10;
+    letter-spacing: 1px;
+  }
+  #pingBadge.good { color: #4cff88; }
+  #pingBadge.mid { color: #ffaa44; }
+  #pingBadge.bad { color: #ff5555; }
+
   @media (orientation: portrait) {
     #menu::before {
       content:'ПОВЕРНИ УСТРОЙСТВО';
@@ -613,7 +628,7 @@
   <div id="menuSide">
     <div id="menuHeader">
       <h1>ЗАХАРКА<br>ШУТЕР</h1>
-      <div class="sub">SURVIVAL FPS</div>
+      <div class="sub">ONLINE FPS</div>
     </div>
     <div id="tabs">
       <div class="tab" data-tab="inventory">ИНВЕНТАРЬ</div>
@@ -622,7 +637,7 @@
       <div class="tab" data-tab="shop">МАГАЗИН</div>
     </div>
     <div id="menuSideFooter">
-      ВЕРСИЯ 2.8 · P2P<br>
+      ВЕРСИЯ 3.0 · SERVER<br>
       КАМЕРА КРУТИТСЯ — ОСМОТРИСЬ
     </div>
   </div>
@@ -661,7 +676,6 @@
         <button class="menuBtn" id="layoutEditorBtn" style="margin-top:10px; background:rgba(80,180,255,0.3); border-color:rgba(120,200,255,0.6);">НАСТРОИТЬ РАСПОЛОЖЕНИЕ</button>
         <button class="menuBtn" id="saveSettingsBtn" style="margin-top:10px;">СОХРАНИТЬ</button>
         <button class="menuBtn" id="resetProgressBtn" style="margin-top:10px; background:rgba(255,60,60,0.3); border-color:rgba(255,100,100,0.6); color:#ff8888;">СБРОСИТЬ ПРОГРЕСС</button>
-
         <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.1);">
           <div style="font-size:11px; font-weight:800; letter-spacing:1.5px; color:#7a8299; margin-bottom:10px;">СОХРАНЕНИЕ / ПЕРЕНОС</div>
           <button class="menuBtn" id="exportBtn" style="background:rgba(80,180,255,0.3); border-color:rgba(120,200,255,0.6);">📤 ЭКСПОРТ В ФАЙЛ</button>
@@ -705,10 +719,11 @@
     <div id="netStatus" class="netStatus">ВЫБЕРИ РЕЖИМ</div>
 
     <div class="netView show" id="netStartView">
-      <p>Прямое P2P-соединение через WebRTC. Один игрок создаёт комнату — другой подключается по коду.</p>
+      <p>Сервер на Render, авторитарная симуляция, ноль рассинхрона. Один создаёт — другой подключается по 4-значному коду.</p>
+      <h3>ТВОЙ НИК</h3>
+      <input class="netInput" id="playerNick" placeholder="Введи ник" maxlength="12" />
       <h3>РЕЖИМ МАТЧА</h3>
       <select id="netModeSelect" class="netInput" style="appearance: none; -webkit-appearance: none;">
-        <option value="blood">До первой крови (1 HP)</option>
         <option value="1">До 1 килла</option>
         <option value="5">До 5 киллов</option>
         <option value="10">До 10 киллов</option>
@@ -732,19 +747,10 @@
     </div>
 
     <div class="netView" id="joinView">
-      <h3>ТВОЙ НИК</h3>
-      <input class="netInput" id="joinName" placeholder="Введи ник" maxlength="12" />
       <h3>КОД КОМНАТЫ</h3>
-      <input class="netInput" id="joinCode" placeholder="ZAK-XXXX" maxlength="12" style="text-transform:uppercase; font-size:18px; text-align:center; letter-spacing:4px;" />
+      <input class="netInput" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase; font-size:18px; text-align:center; letter-spacing:4px;" />
       <button class="netBtn primary" id="joinConnectBtn">ПОДКЛЮЧИТЬСЯ</button>
       <button class="netBtn back full" id="joinCancelBtn" style="margin-top:14px;">ОТМЕНА</button>
-    </div>
-
-    <div class="netView" id="createNickView">
-      <h3>ТВОЙ НИК</h3>
-      <input class="netInput" id="hostNameInput" placeholder="Введи ник" maxlength="12" />
-      <button class="netBtn primary" id="createRoomBtn">СОЗДАТЬ КОМНАТУ</button>
-      <button class="netBtn back full" id="createBackBtn" style="margin-top:14px;">НАЗАД</button>
     </div>
   </div>
 </div>
@@ -756,8 +762,9 @@
 <div id="stickL"><div class="knob" id="knobL"></div></div>
 <div id="hud">HP: <span id="hp">100</span></div>
 <div id="ammoHud">30 / 30</div>
-<div id="scoreboard">Счёт: 0 - 0</div>
+<div id="scoreboard">0 - 0</div>
 <div id="netBadge"></div>
+<div id="pingBadge">PING ---</div>
 <div id="otherHud">
   <div class="otherName" id="otherName">-</div>
   <div>HP: <span class="otherHp" id="otherHp">100</span></div>
@@ -803,18 +810,16 @@
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
 <script type="module">
 import * as THREE from 'three';
 
-const PEER_HOST = 'zaharkashuter.onrender.com';
-const PEER_PORT = 443;
-const PEER_PATH = '/';
-const PEER_SECURE = true;
+/* ============================================================
+   ⚠️ ЗАМЕНИ НА СВОЙ URL RENDER (wss://...)
+   ============================================================ */
+const WS_URL = 'wss://zaharka-server.onrender.com';
 
 /* ============================================================
-   ПРОГРЕССИЯ И XP
+   ПРОГРЕССИЯ
    ============================================================ */
 const LEVELS = [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000];
 const RANKS = [
@@ -829,34 +834,24 @@ function getLevel(xp) {
   for (let i = LEVELS.length - 1; i >= 0; i--) if (xp >= LEVELS[i]) return i;
   return 0;
 }
-
-// Таблица наград за победу: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 function getXpForWin(level) {
   const map = [35, 30, 30, 30, 25, 25, 25, 25, 25, 20];
   return level >= 10 ? 0 : map[level];
 }
-
-// Таблица штрафа за поражение/выход: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 function getXpForLoss(level) {
   const map = [-15, -15, -15, -15, -15, -15, -15, -15, -15, -20];
   return level >= 10 ? 0 : map[level];
 }
-
 function addXp(amount) {
   if (amount === 0) return;
   const oldLevel = getLevel(progress.xp);
-  progress.xp = Math.max(0, Math.min(2000, progress.xp + amount)); // Защита от минуса и переполнения
+  progress.xp = Math.max(0, Math.min(2000, progress.xp + amount));
   const newLevel = getLevel(progress.xp);
   localStorage.setItem('zs_xp', progress.xp);
   updateProgressUI();
-  
-  if (newLevel > oldLevel) {
-    showToast(`🎉 УРОВЕНЬ ${newLevel}! ${RANKS[newLevel]}`);
-  } else if (newLevel < oldLevel) {
-    showToast(`📉 УРОВЕНЬ УПАЛ ДО ${newLevel}`);
-  }
+  if (newLevel > oldLevel) showToast(`🎉 УРОВЕНЬ ${newLevel}! ${RANKS[newLevel]}`);
+  else if (newLevel < oldLevel) showToast(`📉 УРОВЕНЬ УПАЛ ДО ${newLevel}`);
 }
-
 function updateProgressUI() {
   const lvl = getLevel(progress.xp);
   document.getElementById('lvlNum').textContent = lvl;
@@ -946,7 +941,7 @@ function saveSettings() {
    ============================================================ */
 function exportProgress() {
   const data = {
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     xp: progress.xp,
     sensitivity: userSettings.sensitivity,
@@ -977,13 +972,7 @@ function importProgressFromFile(file) {
       if (typeof data !== 'object' || data === null) throw new Error('bad json');
       if (typeof data.xp !== 'number' || data.xp < 0) throw new Error('bad xp');
 
-      const ok = confirm(
-        `Импорт сохранения:\n` +
-        `XP: ${data.xp}\n` +
-        `Чувствительность: ${data.sensitivity ?? '—'}\n` +
-        `Прозрачность: ${data.opacity ?? '—'}%\n\n` +
-        `Текущий прогресс будет заменён. Продолжить?`
-      );
+      const ok = confirm(`Импорт сохранения:\nXP: ${data.xp}\nПродолжить?`);
       if (!ok) return;
 
       progress.xp = Math.min(2000, Math.max(0, data.xp | 0));
@@ -1291,27 +1280,9 @@ const MAT = {
 };
 
 /* ============================================================
-   СЛОЖНОСТЬ
-   ============================================================ */
-const BOT_LEVELS = [
-  { hp: 20,  dmg: 0.25, spd: 0.33 },
-  { hp: 40,  dmg: 0.5,  spd: 1.0  },
-  { hp: 80,  dmg: 1.0,  spd: 1.0  },
-  { hp: 100, dmg: 1.0,  spd: 1.0  },
-  { hp: 120, dmg: 1.0,  spd: 1.0  },
-  { hp: 140, dmg: 1.0,  spd: 1.0  },
-  { hp: 150, dmg: 1.0,  spd: 1.0  },
-  { hp: 200, dmg: 1.0,  spd: 1.0  },
-  { hp: 400, dmg: 3.0,  spd: 2.0  },
-  { hp: 500, dmg: 4.0,  spd: 3.0  },
-];
-
-/* ============================================================
-   КАРТА
+   КАРТА (для рендера)
    ============================================================ */
 const FLOOR = 60;
-const PLAYER_SPAWN = { x: 0, z: 25 };
-const BOT_SPAWN = { x: -45, z: -45 };
 
 const walls = [
   { x: 0, z: -FLOOR, w: FLOOR*2, d: 1, h: 6, type: 'wall' },
@@ -1337,37 +1308,11 @@ const walls = [
   { x: -5,  z:  5, w: 1.2, d: 1.2, h: 1.5, type: 'barrel' },
 ];
 
-const buildings = [
-  { x: -40, z: -20, w: 14, d: 10, h: 6, door: { side: 'south', width: 2.5 },
-    windows: [
-      { side: 'south', offset: -3, w: 2, h: 1.6, y: 1.5 },
-      { side: 'south', offset:  3, w: 2, h: 1.6, y: 1.5 },
-      { side: 'east',  offset:  0, w: 2, h: 1.6, y: 1.5 },
-      { side: 'north', offset: -2, w: 2, h: 1.6, y: 1.5 },
-      { side: 'north', offset:  2, w: 2, h: 1.6, y: 1.5 },
-    ], stairs: { side: 'west' } },
-  { x: 40, z: 20, w: 12, d: 12, h: 6.5, door: { side: 'west', width: 2.5 },
-    windows: [
-      { side: 'west', offset: -3, w: 2, h: 1.6, y: 1.5 },
-      { side: 'west', offset:  3, w: 2, h: 1.6, y: 1.5 },
-      { side: 'north', offset: 0, w: 2.5, h: 1.6, y: 1.5 },
-      { side: 'south', offset: -2, w: 2, h: 1.6, y: 1.5 },
-      { side: 'south', offset:  2, w: 2, h: 1.6, y: 1.5 },
-    ], stairs: { side: 'south' } },
-  { x: 0, z: -45, w: 12, d: 10, h: 5.5, door: { side: 'north', width: 2.5 },
-    windows: [
-      { side: 'north', offset: -2.5, w: 2, h: 1.6, y: 1.5 },
-      { side: 'north', offset:  2.5, w: 2, h: 1.6, y: 1.5 },
-      { side: 'east', offset: 0, w: 2, h: 1.6, y: 1.5 },
-      { side: 'west', offset: 0, w: 2, h: 1.6, y: 1.5 },
-    ], stairs: { side: 'east' } },
-];
-
 /* ============================================================
    СЦЕНА
    ============================================================ */
 let scene, camera, renderer, clock;
-let colliders = [], tracers = [], grenades = [], bloodParticles = [];
+let tracers = [], bloodParticles = [];
 let raycaster;
 let player, remotePlayer, bot;
 let weaponModels = {};
@@ -1383,90 +1328,35 @@ const scoreboard = document.getElementById('scoreboard');
 const scopeOverlay = document.getElementById('scopeOverlay');
 const enemyHpBar = document.getElementById('enemyHpBar');
 const enemyHpFill = document.getElementById('enemyHpFill');
+const pingBadge = document.getElementById('pingBadge');
 
 const menuCam = { angle: 0, speed: 0.12, radius: 14, height: 3.2, centerX: 0, centerZ: 18, pitch: -0.05 };
-
-const net = {
-  peer: null, conn: null, isHost: false, isOnline: false,
-  myName: 'Игрок', otherName: 'Другой', roomCode: null, connected: false,
-  guestInput: { moveX:0, moveY:0, yaw:Math.PI, pitch:0, fire:false, weapon:'rifle', reload:false, crouch:false, jump:false },
-  lastSnapshot: null, lastSnapshotTime: 0,
-  hostHp: 100, guestHp: 100,
-  hostScore: 0, guestScore: 0,
-  hostDeaths: 0, guestDeaths: 0,
-  targetKills: 13,
-  firstBlood: false,
-  retryCount: 0,
-};
 
 const MODE = { MENU: 0, PLAY_SOLO: 1, PLAY_ONLINE: 2 };
 let mode = MODE.MENU;
 let gameWinner = null;
-const soloStats = { kills: 0, deaths: 0 };
-const SOLO_TARGET_KILLS = 16;
-const SOLO_TARGET_DEATHS = 16;
-let dualRespawnToken = 0;
-let respawnCountdownId = null;
 
-const matchStats = {
-  kills: 0,
-  deaths: 0,
-  headshots: 0,
-  shotsFired: 0,
-  shotsHit: 0,
-  currentStreak: 0,
-  bestStreak: 0,
-  startTime: 0,
-  active: false,
+/* ============================================================
+   СЕТЕВОЙ СТЕЙТ
+   ============================================================ */
+const net = {
+  ws: null,
+  connected: false,
+  roomCode: null,
+  myName: 'Игрок',
+  otherName: 'Другой',
+  isHost: false,
+  targetKills: 13,
+  ping: 0,
+  lastPingTs: 0,
+  // Серверные снапшоты
+  serverSelf: null,
+  serverEnemy: null,
+  lastSnapshotTime: 0,
+  prevEnemy: null,
+  // Локальное предсказание своей позиции
+  predicted: null,
 };
-
-function resetMatchStats() {
-  matchStats.kills = 0;
-  matchStats.deaths = 0;
-  matchStats.headshots = 0;
-  matchStats.shotsFired = 0;
-  matchStats.shotsHit = 0;
-  matchStats.currentStreak = 0;
-  matchStats.bestStreak = 0;
-  matchStats.startTime = performance.now();
-  matchStats.active = true;
-}
-function fmtTime(ms) {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-function fillMatchStatsOverlay() {
-  const acc = matchStats.shotsFired > 0 ? Math.round(matchStats.shotsHit / matchStats.shotsFired * 100) : 0;
-  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-  set('msKills', matchStats.kills);
-  set('msDeaths', matchStats.deaths);
-  set('msHeadshots', matchStats.headshots);
-  set('msAccuracy', acc + '%');
-  set('msStreak', matchStats.bestStreak);
-  set('msTime', fmtTime(performance.now() - matchStats.startTime));
-  const t = document.getElementById('statsTable');
-  if (t) t.classList.add('show');
-}
-function hideMatchStatsOverlay() {
-  const t = document.getElementById('statsTable');
-  if (t) t.classList.remove('show');
-}
-
-function startRespawnCountdown(seconds) {
-  if (respawnCountdownId) clearInterval(respawnCountdownId);
-  const el = document.getElementById('respawnTimer');
-  let left = seconds;
-  if (el) el.textContent = `РЕСПАВН ЧЕРЕЗ ${left}...`;
-  respawnCountdownId = setInterval(() => {
-    left--;
-    if (left <= 0) {
-      clearInterval(respawnCountdownId);
-      respawnCountdownId = null;
-      return;
-    }
-    if (el) el.textContent = `РЕСПАВН ЧЕРЕЗ ${left}...`;
-  }, 1000);
-}
 
 const PLAYER_HEIGHT = 1.6;
 const CROUCH_HEIGHT = 1.1;
@@ -1475,8 +1365,6 @@ const JUMP_VELOCITY = 8.0;
 const PLAYER_SPEED = 8;
 const PLAYER_CROUCH_SPEED = 4;
 const PLAYER_RADIUS = 0.4;
-const TICK_RATE = 30;
-const TICK_MS = 1000 / TICK_RATE;
 
 const WEAPON_STATS = {
   rifle:   { magSize: 30, reloadTime: 3000, damageBody: 20, damageHead: 80, fireRate: 110 },
@@ -1485,17 +1373,17 @@ const WEAPON_STATS = {
   knife:   { magSize: 1,  reloadTime: 0,    damageBody: 9999, damageHead: 9999, fireRate: 600 }
 };
 
-const KNIFE_RANGE = 2.0;
-const KNIFE_ANGLE = Math.PI / 6;
-
 const BOT_STATE = { PATROL:0, SEARCH:1, CHASE:2, ATTACK:3 };
 const BOT_SIGHT_DIST = 65, BOT_ATTACK_DIST = 25, BOT_FOV = Math.PI * 0.85;
 const BOT_SPEED = 4.6;
 const BOT_FIRE_COOLDOWN = 450, BOT_DAMAGE = 14, BOT_ACCURACY = 0.55;
 const BOT_REACTION_TIME = 200, BOT_SEARCH_TIME = 8000;
 const BOT_STRAFE_INTERVAL = 700;
+const BOT_SPAWN = { x: -45, z: -45 };
 
-/* АУДИО */
+/* ============================================================
+   АУДИО
+   ============================================================ */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function createTone(freq, duration, type) {
   return function(pan = 0, volume = 1) {
@@ -1524,7 +1412,9 @@ const sounds = {
   knife: createTone(220, 0.15, 'square')
 };
 
-/* ИНИЦИАЛИЗАЦИЯ */
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ СЦЕНЫ
+   ============================================================ */
 function initScene() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x87a0b8);
@@ -1551,10 +1441,10 @@ function initScene() {
   scene.add(grid);
 
   walls.forEach(createObject);
-  buildings.forEach(createBuilding);
 
+  // Локальный игрок (для предсказания и камеры)
   player = {
-    pos: new THREE.Vector3(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z),
+    pos: new THREE.Vector3(0, 0, 25),
     vy: 0, yaw: Math.PI, pitch: 0,
     hp: 100, alive: true, onGround: true,
     weapon: 'rifle', grenades: 1, lastGrenadeTime: 0,
@@ -1625,148 +1515,28 @@ function createObject(w) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   scene.add(mesh);
-  addCollider(w.x, 0, w.z, w.w, w.h, w.d, w.type === 'platform' || w.type === 'crate', mesh);
 }
 
-function createBuilding(b) {
-  const wallThickness = 0.4;
-  function makeWallMat(w, h) {
-    const m = MAT.wall.clone();
-    m.map = cloneTextureWithRepeat(sandstoneTex, Math.max(1, Math.round(w/2)), Math.max(1, Math.round(h/2)));
-    return m;
-  }
-  const hw = b.w / 2, hd = b.d / 2;
-  const roofY = b.h, roofThickness = 0.3, roofTopY = roofY + roofThickness;
-
-  function addWallSegment(x, y, z, w, h, d) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), makeWallMat(w, h));
-    mesh.position.set(x, y, z);
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    scene.add(mesh);
-    addCollider(x, y - h/2, z, w, h, d, false, mesh);
-  }
-
-  function buildWallSide(side) {
-    const isNS = (side === 'north' || side === 'south');
-    const wallLength = isNS ? b.w : b.d;
-    const wcx = b.x + (side === 'west' ? -hw : side === 'east' ? hw : 0);
-    const wcz = b.z + (side === 'north' ? -hd : side === 'south' ? hd : 0);
-    const holes = [];
-    b.windows.filter(w => w.side === side).forEach(w => {
-      holes.push({ center: w.offset, width: w.w, yBottom: w.y, yTop: w.y + w.h });
-    });
-    if (b.door && b.door.side === side) {
-      holes.push({ center: 0, width: b.door.width, yBottom: 0, yTop: b.h - 0.3, isDoor: true });
-    }
-    holes.sort((a, bb) => a.center - bb.center);
-    let cursor = -wallLength / 2;
-    const segs = [];
-    holes.forEach(hole => {
-      const hStart = hole.center - hole.width/2;
-      const hEnd = hole.center + hole.width/2;
-      if (hStart > cursor + 0.01) segs.push({ start: cursor, end: hStart, yBottom: 0, yTop: b.h });
-      if (hole.yTop < b.h - 0.01) segs.push({ start: hStart, end: hEnd, yBottom: hole.yTop, yTop: b.h });
-      if (!hole.isDoor && hole.yBottom > 0.01) segs.push({ start: hStart, end: hEnd, yBottom: 0, yTop: hole.yBottom });
-      cursor = hEnd;
-    });
-    if (cursor < wallLength/2 - 0.01) segs.push({ start: cursor, end: wallLength/2, yBottom: 0, yTop: b.h });
-    segs.forEach(seg => {
-      const segL = seg.end - seg.start;
-      if (segL < 0.01) return;
-      const segC = (seg.start + seg.end)/2;
-      const segH = seg.yTop - seg.yBottom;
-      const segCY = (seg.yBottom + seg.yTop)/2;
-      if (isNS) addWallSegment(wcx + segC, segCY, wcz, segL, segH, wallThickness);
-      else addWallSegment(wcx, segCY, wcz + segC, wallThickness, segH, segL);
-    });
-  }
-
-  buildWallSide('north'); buildWallSide('south');
-  buildWallSide('west'); buildWallSide('east');
-
-  const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.6, roofThickness, b.d + 0.6), MAT.roof);
-  roofMesh.position.set(b.x, roofTopY - roofThickness/2, b.z);
-  roofMesh.castShadow = true; roofMesh.receiveShadow = true;
-  scene.add(roofMesh);
-  addCollider(b.x, roofY, b.z, b.w + 0.6, roofThickness, b.d + 0.6, true, roofMesh);
-
-  const parapetH = 0.9, parapetT = 0.3;
-  const pXO = hw + 0.3, pZO = hd + 0.3;
-  const stairsSide = b.stairs.side;
-
-  function addParapet(cx, cz, w, d) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, parapetH, d), MAT.parapet);
-    mesh.position.set(cx, roofTopY + parapetH/2, cz);
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    scene.add(mesh);
-    addCollider(cx, roofTopY, cz, w, parapetH, d, false, mesh);
-  }
-  if (stairsSide !== 'north') addParapet(b.x, b.z - pZO, b.w + 0.6, parapetT);
-  if (stairsSide !== 'south') addParapet(b.x, b.z + pZO, b.w + 0.6, parapetT);
-  if (stairsSide !== 'west')  addParapet(b.x - pXO, b.z, parapetT, b.d + 0.6);
-  if (stairsSide !== 'east')  addParapet(b.x + pXO, b.z, parapetT, b.d + 0.6);
-
-  const stairWidth = 1.6;
-  const stepCount = Math.ceil(b.h / 0.5);
-  const stepHeight = b.h / stepCount;
-  const stepDepth = 0.6;
-  let startX, startZ, dx, dz;
-  if (stairsSide === 'north') { startX = b.x; startZ = b.z - hd - stepCount*stepDepth; dx = 0; dz = 1; }
-  else if (stairsSide === 'south') { startX = b.x; startZ = b.z + hd + stepCount*stepDepth; dx = 0; dz = -1; }
-  else if (stairsSide === 'west') { startX = b.x - hw - stepCount*stepDepth; startZ = b.z; dx = 1; dz = 0; }
-  else { startX = b.x + hw + stepCount*stepDepth; startZ = b.z; dx = -1; dz = 0; }
-
-  for (let i = 0; i < stepCount; i++) {
-    const stepY = (i+1) * stepHeight;
-    const stepCX = startX + dx * (i*stepDepth + stepDepth/2);
-    const stepCZ = startZ + dz * (i*stepDepth + stepDepth/2);
-    const stepH = stepY;
-    const mat = MAT.stair.clone();
-    mat.map = cloneTextureWithRepeat(sandstoneTex, 1, Math.max(1, Math.round(stepH/2)));
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(dx !== 0 ? stepDepth : stairWidth, stepH, dz !== 0 ? stepDepth : stairWidth),
-      mat
-    );
-    mesh.position.set(stepCX, stepH/2, stepCZ);
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    scene.add(mesh);
-    addCollider(stepCX, 0, stepCZ, dx !== 0 ? stepDepth : stairWidth, stepH, dz !== 0 ? stepDepth : stairWidth, true, mesh);
-  }
-
-  const innerFloor = new THREE.Mesh(new THREE.BoxGeometry(b.w - 0.8, 0.05, b.d - 0.8), MAT.innerFloor);
-  innerFloor.position.set(b.x, 0.03, b.z);
-  innerFloor.receiveShadow = true;
-  scene.add(innerFloor);
-}
-
-/* ========== ОРУЖИЕ С РУКОЙ ========== */
+/* ============================================================
+   МОДЕЛИ
+   ============================================================ */
 function createWeaponModel(type) {
   const g = new THREE.Group();
-
   const skinMat = new THREE.MeshStandardMaterial({ color: 0xe0b090, roughness: 0.75, metalness: 0.0 });
   const forearmMat = new THREE.MeshStandardMaterial({ color: 0xd8a880, roughness: 0.8, metalness: 0.0 });
 
-  const forearm = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.055, 0.07, 0.55, 10),
-    forearmMat
-  );
+  const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.07, 0.55, 10), forearmMat);
   forearm.rotation.x = Math.PI / 2;
   forearm.rotation.z = -0.12;
-  forearm.position.set(0.24, -0.34, 0.05); // локоть ниже-ближе к камере
+  forearm.position.set(0.24, -0.34, 0.05);
   g.add(forearm);
 
-  const fist = new THREE.Mesh(
-    new THREE.SphereGeometry(0.07, 10, 8),
-    skinMat
-  );
+  const fist = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), skinMat);
   fist.scale.set(1, 0.85, 1.15);
   fist.position.set(0.22, -0.26, -0.30);
   g.add(fist);
 
-  const thumb = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.022, 0.055, 4, 6),
-    skinMat
-  );
+  const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.055, 4, 6), skinMat);
   thumb.rotation.z = 0.4;
   thumb.rotation.x = 0.6;
   thumb.position.set(0.19, -0.22, -0.33);
@@ -1833,9 +1603,9 @@ function createRemotePlayerModel() {
   const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.5, 10), new THREE.MeshStandardMaterial({color:0x333333}));
   legs.position.y = 0.25; g.add(legs);
   const hitHead = new THREE.Mesh(new THREE.SphereGeometry(0.42, 6, 5), new THREE.MeshBasicMaterial({visible:false}));
-  hitHead.position.y = 2.2; hitHead.userData = { part:'head' }; g.add(hitHead);
+  hitHead.position.y = 2.2; g.add(hitHead);
   const hitBody = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.9, 6), new THREE.MeshBasicMaterial({visible:false}));
-  hitBody.position.y = 1.05; hitBody.userData = { part:'body' }; g.add(hitBody);
+  hitBody.position.y = 1.05; g.add(hitBody);
   return { group:g, hitHead, hitBody };
 }
 
@@ -1866,17 +1636,24 @@ function createBot(x, z) {
   return b;
 }
 
-/* ========== КОЛЛИЗИИ ========== */
+/* ============================================================
+   КОЛЛИЗИИ (клиентские, для предсказания и бота)
+   ============================================================ */
 const _testBox = new THREE.Box3();
 const _min = new THREE.Vector3();
 const _max = new THREE.Vector3();
+const colliders = [];
 
-function addCollider(x, y, z, w, h, d, isFloor=false, mesh=null) {
+function addCollider(x, y, z, w, h, d) {
   colliders.push({
     min: new THREE.Vector3(x - w/2, y, z - d/2),
     max: new THREE.Vector3(x + w/2, y + h, z + d/2),
-    isFloor, mesh
   });
+}
+
+function buildColliders() {
+  colliders.length = 0;
+  walls.forEach(w => addCollider(w.x, 0, w.z, w.w, w.h, w.d));
 }
 
 function canExistAt(nx, nz, y, radius, height = PLAYER_HEIGHT) {
@@ -1925,17 +1702,6 @@ function stepPlayerPhysics(state, moveInput, dt, crouching) {
   if (ny <= groundY) {
     ny = groundY; state.vy = 0; state.onGround = true;
   } else {
-    if (state.vy > 0 && !canExistAt(state.pos.x, state.pos.z, ny, PLAYER_RADIUS, curHeight)) {
-      let ceilY = Infinity;
-      for (let i = 0; i < colliders.length; i++) {
-        const b = colliders[i];
-        if (state.pos.x + PLAYER_RADIUS < b.min.x || state.pos.x - PLAYER_RADIUS > b.max.x) continue;
-        if (state.pos.z + PLAYER_RADIUS < b.min.z || state.pos.z - PLAYER_RADIUS > b.max.z) continue;
-        if (b.min.y > state.pos.y + 0.1 && b.min.y < ceilY) ceilY = b.min.y;
-      }
-      if (ceilY !== Infinity) ny = Math.min(ny, ceilY - curHeight);
-      state.vy = 0;
-    }
     state.onGround = false;
   }
   state.pos.y = ny;
@@ -1949,8 +1715,10 @@ function tryJump(state) {
   return false;
 }
 
-/* ========== УПРАВЛЕНИЕ ========== */
-const input = { moveX: 0, moveY: 0, fire: false };
+/* ============================================================
+   УПРАВЛЕНИЕ
+   ============================================================ */
+const input = { moveX: 0, moveY: 0, fire: false, jumpPending: false };
 const STICK_RADIUS = 60, STICK_DEADZONE = 3;
 const leftHalf = document.getElementById('leftHalf');
 const rightHalf = document.getElementById('rightHalf');
@@ -2038,14 +1806,16 @@ const jumpBtn = document.getElementById('jump');
 jumpBtn.addEventListener('touchstart', e => {
   e.preventDefault(); e.stopPropagation();
   if (mode !== MODE.MENU && player.alive) {
-    if (mode === MODE.PLAY_ONLINE && !net.isHost) {
-      player._jumpPending = true;
-    } else {
-      tryJump(player);
-    }
+    input.jumpPending = true;
+    tryJump(player);
   }
 }, { passive:false });
-jumpBtn.addEventListener('mousedown', () => { if (mode !== MODE.MENU && player.alive) tryJump(player); });
+jumpBtn.addEventListener('mousedown', () => {
+  if (mode !== MODE.MENU && player.alive) {
+    input.jumpPending = true;
+    tryJump(player);
+  }
+});
 
 const crouchBtn = document.getElementById('crouchBtn');
 crouchBtn.addEventListener('touchstart', e => {
@@ -2065,7 +1835,6 @@ swapBtn.addEventListener('touchstart', e => {
     camera.fov = 70; camera.updateProjectionMatrix();
     player.isScoped = false;
     document.getElementById('zoomBtn').classList.remove('active');
-
     const cycle = ['rifle', 'shotgun', 'sniper', 'knife', 'grenade'];
     const idx = cycle.indexOf(player.weapon);
     player.weapon = cycle[(idx + 1) % cycle.length];
@@ -2101,19 +1870,9 @@ fireBtn.addEventListener('mouseup',    () => input.fire = false);
 fireBtn.addEventListener('mouseleave', () => input.fire = false);
 
 function handleReload() {
-  if (player.weapon === 'grenade' || player.isReloading || player.inspecting) return;
-  if (player.weapon === 'knife') {
-    player.inspecting = true;
-    player.inspectEndTime = performance.now() + 2500;
-    sounds.reload(0, 0.5);
-    return;
-  }
+  if (player.weapon === 'grenade' || player.weapon === 'knife' || player.isReloading) return;
   const stats = WEAPON_STATS[player.weapon];
-  if (player.ammo[player.weapon] === stats.magSize) {
-    player.inspecting = true;
-    player.inspectEndTime = performance.now() + 2500;
-    sounds.reload(0, 0.5);
-  } else {
+  if (player.ammo[player.weapon] < stats.magSize) {
     player.isReloading = true;
     player.reloadEndTime = performance.now() + stats.reloadTime;
     sounds.reload(0, 0.5);
@@ -2151,449 +1910,359 @@ function showHitmarker(isHead) {
   setTimeout(() => ch.classList.remove('hit-body', 'hit-head'), 200);
 }
 
-/* ========== НОЖ ========== */
-function tryKnifeAttack() {
-  if (!player.alive || player.isReloading || player.inspecting) return;
-  const now = performance.now();
-  if (now - player.lastShotTime < WEAPON_STATS.knife.fireRate) return;
-  player.lastShotTime = now;
-  sounds.knife(0, 0.7);
-
-  const origin = camera.position.clone();
-  const forward = new THREE.Vector3();
-  camera.getWorldDirection(forward);
-
-  let hitSomething = false;
-
-  if (mode === MODE.PLAY_SOLO && bot.alive) {
-    const bp = bot.group.position.clone();
-    bp.y += 1.0;
-    const toBot = bp.clone().sub(origin);
-    const dist = toBot.length();
-    if (dist <= KNIFE_RANGE + 1.0) {
-      const toBotFlat = new THREE.Vector3(toBot.x, 0, toBot.z).normalize();
-      const fwdFlat = new THREE.Vector3(forward.x, 0, forward.z).normalize();
-      const angle = Math.acos(Math.max(-1, Math.min(1, toBotFlat.dot(fwdFlat))));
-      if (angle <= KNIFE_ANGLE || dist < 1.5) {
-        hitSomething = true;
-        showHitmarker(true);
-        spawnBlood(bp);
-        if (bot.alive) killBot();
+/* ============================================================
+   СЕТЬ
+   ============================================================ */
+function connectServer() {
+  return new Promise((resolve, reject) => {
+    if (net.ws && net.ws.readyState === WebSocket.OPEN) { resolve(); return; }
+    setNetStatus('ПОДКЛЮЧЕНИЕ К СЕРВЕРУ...', 'wait');
+    try { net.ws = new WebSocket(WS_URL); } catch (e) { reject(e); return; }
+    net.ws.onopen = () => { net.connected = true; resolve(); };
+    net.ws.onerror = (e) => { setNetStatus('ОШИБКА ПОДКЛЮЧЕНИЯ', 'err'); reject(e); };
+    net.ws.onclose = () => {
+      net.connected = false;
+      if (mode === MODE.PLAY_ONLINE) {
+        showToast('❌ Соединение потеряно');
+        exitToMenu();
       }
-    }
-  }
-
-  if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible) {
-    const rp = remotePlayer.group.position.clone();
-    rp.y += 1.0;
-    const toRp = rp.clone().sub(origin);
-    const dist = toRp.length();
-    if (dist <= KNIFE_RANGE + 1.0) {
-      const toRpFlat = new THREE.Vector3(toRp.x, 0, toRp.z).normalize();
-      const fwdFlat = new THREE.Vector3(forward.x, 0, forward.z).normalize();
-      const angle = Math.acos(Math.max(-1, Math.min(1, toRpFlat.dot(fwdFlat))));
-      if (angle <= KNIFE_ANGLE || dist < 1.5) {
-        hitSomething = true;
-        showHitmarker(true);
-        spawnBlood(rp);
-        if (net.conn && net.connected) {
-          net.conn.send({ t:'dmg', dmg: 9999, head: true });
-        }
-      }
-    }
-  }
-
-  if (!hitSomething) {
-    const end = origin.clone().add(forward.clone().multiplyScalar(KNIFE_RANGE));
-    spawnTracer(origin.clone().add(forward.clone().multiplyScalar(0.5)), end, 0xddddff);
-  }
-}
-
-/* ========== СТРЕЛЬБА ========== */
-function tryShoot() {
-  if (!player.alive || player.isReloading || player.inspecting) return;
-
-  if (player.weapon === 'knife') {
-    tryKnifeAttack();
-    return;
-  }
-
-  const now = performance.now();
-
-  if (player.weapon === 'grenade') {
-    if (now - player.lastGrenadeTime < 1000 || player.grenades <= 0) return;
-    player.lastGrenadeTime = now;
-    player.grenades--;
-    throwGrenade();
-    player.weapon = 'rifle';
-    setWeaponVisible('rifle');
-    updateAmmoUI();
-    return;
-  }
-
-  const stats = WEAPON_STATS[player.weapon];
-  if (now - player.lastShotTime < stats.fireRate) return;
-  if (player.ammo[player.weapon] <= 0) {
-    player.isReloading = true;
-    player.reloadEndTime = now + stats.reloadTime;
-    sounds.reload(0, 0.5);
-    updateAmmoUI();
-    return;
-  }
-
-  player.lastShotTime = now;
-  player.ammo[player.weapon]--;
-  matchStats.shotsFired++;
-  updateAmmoUI();
-
-  if (player.weapon === 'rifle') sounds.shot(0, 0.5);
-  else if (player.weapon === 'shotgun') sounds.shotgun(0, 0.8);
-  else sounds.sniper(0, 1.0);
-
-  const shootDir = new THREE.Vector3();
-  const origin = new THREE.Vector3();
-  camera.getWorldDirection(shootDir);
-  camera.getWorldPosition(origin);
-
-  const targets = [];
-  if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible) {
-    targets.push(remotePlayer.hitHead, remotePlayer.hitBody);
-  }
-  if (mode === MODE.PLAY_SOLO && bot.alive) {
-    targets.push(bot.hitHead, bot.hitBody);
-  }
-  for (let i = 0; i < colliders.length; i++) {
-    if (colliders[i].mesh) targets.push(colliders[i].mesh);
-  }
-
-  raycaster.set(origin, shootDir);
-  const hits = raycaster.intersectObjects(targets, false);
-  const first = hits[0];
-  const end = first ? first.point.clone() : origin.clone().add(shootDir.clone().multiplyScalar(80));
-  spawnTracer(origin, end, 0xffaa00);
-
-  if (!first) return;
-  if (!first.object.userData || !first.object.userData.part) return;
-
-  matchStats.shotsHit++;
-  const isHead = first.object.userData.part === 'head';
-  const dmg = isHead ? stats.damageHead : stats.damageBody;
-  showHitmarker(isHead);
-  spawnBlood(first.point);
-  if (isHead) sounds.headshot(0, 0.5); else sounds.hit(0, 0.5);
-
-  if (mode === MODE.PLAY_SOLO && first.object.userData.isBot) {
-    if (isHead) matchStats.headshots++;
-    bot.hp -= dmg;
-    bot.lastDamaged = now;
-    if (bot.hp <= 0 && bot.alive) killBot();
-  } else if (mode === MODE.PLAY_ONLINE) {
-    if (net.conn && net.connected) {
-      net.conn.send({ t:'dmg', dmg, head: isHead });
-    }
-  }
-}
-
-function killBot() {
-  if (!bot.alive) return;
-  bot.alive = false;
-  bot.hp = 0;
-  bot.group.rotation.x = -Math.PI/2;
-  bot.group.position.y = -0.6;
-  bot.respawnAt = performance.now() + 3000;
-  showKillMsg('Ты', 'БОТ');
-
-  matchStats.kills++;
-  matchStats.currentStreak++;
-  if (matchStats.currentStreak > matchStats.bestStreak) matchStats.bestStreak = matchStats.currentStreak;
-
-  if (mode === MODE.PLAY_SOLO && !gameWinner) {
-    soloStats.kills++;
-    updateSoloScoreboard();
-    if (soloStats.kills >= SOLO_TARGET_KILLS) {
-      winSolo();
-      return;
-    }
-    scheduleDualRespawn(3000);
-  }
-}
-
-function showKillMsg(killer, victim) {
-  const el = document.createElement('div');
-  el.className = 'killMsg';
-  el.innerHTML = `<b>${killer}</b> ⟶ <b style="color:#ff8888">${victim}</b>`;
-  killfeed.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
-function spawnTracer(a, b, color) {
-  const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
-  const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.9 });
-  const line = new THREE.Line(geo, mat);
-  scene.add(line);
-  tracers.push({ line, born: performance.now() });
-}
-
-function spawnBlood(pos) {
-  for (let i = 0; i < 5; i++) {
-    const p = new THREE.Mesh(
-      new THREE.SphereGeometry(0.05, 4, 4),
-      new THREE.MeshBasicMaterial({ color:0xff0000, transparent:true, opacity:0.8 })
-    );
-    p.position.copy(pos);
-    p.userData = {
-      vel: new THREE.Vector3((Math.random()-0.5)*5, Math.random()*4, (Math.random()-0.5)*5),
-      born: performance.now()
     };
-    scene.add(p);
-    bloodParticles.push(p);
+    net.ws.onmessage = (ev) => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch { return; }
+      handleServerMessage(msg);
+    };
+  });
+}
+
+function sendToServer(msg) {
+  if (net.ws && net.ws.readyState === WebSocket.OPEN) {
+    net.ws.send(JSON.stringify(msg));
   }
 }
 
-function throwGrenade() {
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  const pos = camera.position.clone().add(dir.clone().multiplyScalar(1));
-  const grenade = new THREE.Mesh(
-    new THREE.SphereGeometry(0.15, 8, 6),
-    new THREE.MeshStandardMaterial({ color:0x2a3a1a, roughness:0.6 })
-  );
-  grenade.position.copy(pos);
-  grenade.userData = { vel: dir.clone().multiplyScalar(15).add(new THREE.Vector3(0, 5, 0)), born: performance.now(), exploded: false };
-  scene.add(grenade);
-  grenades.push(grenade);
-}
+function handleServerMessage(msg) {
+  switch (msg.t) {
+    case 'created':
+      net.roomCode = msg.code;
+      net.myName = msg.name;
+      document.getElementById('roomCode').textContent = msg.code.toUpperCase();
+      document.getElementById('hostName').textContent = msg.name;
+      setNetStatus('ЖДЁМ ГОСТЯ...', 'wait');
+      showView('hostView');
+      break;
 
-function updateGrenades(dt, now) {
-  for (let i = grenades.length - 1; i >= 0; i--) {
-    const g = grenades[i];
-    const ud = g.userData;
-    if (ud.exploded) continue;
-    ud.vel.y -= 20 * dt;
-    const nextX = g.position.x + ud.vel.x * dt;
-    const nextZ = g.position.z + ud.vel.z * dt;
-    if (canExistAt(nextX, g.position.z, g.position.y, 0.15, 0.3)) g.position.x = nextX;
-    else ud.vel.x *= -0.5;
-    if (canExistAt(g.position.x, nextZ, g.position.y, 0.15, 0.3)) g.position.z = nextZ;
-    else ud.vel.z *= -0.5;
-    g.position.y += ud.vel.y * dt;
-    const gy = groundHeightAt(g.position.x, g.position.z, g.position.y, 0.15);
-    if (g.position.y < gy + 0.15) {
-      g.position.y = gy + 0.15;
-      ud.vel.y *= -0.4;
-      ud.vel.x *= 0.7; ud.vel.z *= 0.7;
-    }
-    if (now - ud.born > 2000) {
-      ud.exploded = true;
-      sounds.explode(0, 1);
-      const sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6),
-        new THREE.MeshBasicMaterial({ color:0xff8800, transparent:true, opacity:0.5 }));
-      sphere.position.copy(g.position); scene.add(sphere);
-      setTimeout(() => scene.remove(sphere), 200);
-      scene.remove(g); grenades.splice(i, 1);
-      const explodeDist = 15;
-      if (player.alive) {
-        const dist = player.pos.distanceTo(g.position);
-        if (dist < explodeDist) {
-          const dmg = Math.round(120 * (1 - dist / explodeDist));
-          if (dmg > 0) damagePlayerLocal(dmg, 'ГРАНАТА');
+    case 'joined':
+      net.roomCode = msg.code;
+      net.otherName = msg.hostName;
+      net.isHost = false;
+      break;
+
+    case 'guestJoined':
+      net.otherName = msg.name;
+      document.getElementById('hostPlayers').innerHTML = `Ты: <b style="color:#ff8844;">${net.myName}</b><br>Гость: <b style="color:#4cff88;">${msg.name}</b>`;
+      break;
+
+    case 'start':
+      net.myName = msg.hostName;
+      net.otherName = msg.guestName;
+      net.isHost = (net.ws && msg.hostName === net.myName);
+      net.targetKills = msg.targetKills;
+      enterOnlineGame();
+      break;
+
+    case 'state':
+      net.serverSelf = msg.you;
+      net.serverEnemy = msg.enemy;
+      net.lastSnapshotTime = performance.now();
+      // Начисление счёта
+      const myScore = net.isHost ? msg.score.host : msg.score.guest;
+      const otherScore = net.isHost ? msg.score.guest : msg.score.host;
+      scoreboard.textContent = `${net.myName}: ${myScore} | ${net.otherName}: ${otherScore}`;
+      otherHpEl.textContent = msg.enemy.hp;
+      // Обновление своей HP/оружия (по серверу)
+      if (msg.you.hp !== player.hp) {
+        if (msg.you.hp < player.hp) {
+          dmgFlash.style.opacity = '0.8';
+          setTimeout(() => dmgFlash.style.opacity = '0', 100);
         }
+        player.hp = msg.you.hp;
+        updateHpUI();
       }
-      if (mode === MODE.PLAY_SOLO && bot.alive && bot.group.position.distanceTo(g.position) < explodeDist) {
-        bot.hp -= 150;
-        if (bot.hp <= 0 && bot.alive) killBot();
+      if (msg.you.alive === false && player.alive) {
+        player.alive = false;
+        document.getElementById('deathKiller').textContent = 'ПРОТИВНИК';
+        document.getElementById('deathOverlay').classList.add('show');
+        let left = 3;
+        const el = document.getElementById('respawnTimer');
+        if (el) el.textContent = `РЕСПАВН ЧЕРЕЗ ${left}...`;
+        const iv = setInterval(() => {
+          left--;
+          if (el) el.textContent = `РЕСПАВН ЧЕРЕЗ ${left}...`;
+          if (left <= 0) clearInterval(iv);
+        }, 1000);
       }
-    }
+      if (msg.you.alive === true && !player.alive) {
+        player.alive = true;
+        document.getElementById('deathOverlay').classList.remove('show');
+        player.hp = 100;
+        updateHpUI();
+      }
+      // Оружие и аммо — только для отображения (реальная логика на сервере)
+      if (msg.you.weapon !== player.weapon) {
+        player.weapon = msg.you.weapon;
+        setWeaponVisible(player.weapon);
+      }
+      if (player.weapon !== 'knife' && player.weapon !== 'grenade') {
+        player.ammo[player.weapon] = msg.you.ammo;
+      }
+      if (msg.you.isReloading !== player.isReloading) {
+        player.isReloading = msg.you.isReloading;
+      }
+      updateAmmoUI();
+      break;
+
+    case 'kill':
+      if (msg.killer === (net.isHost ? 'host' : 'guest')) {
+        showKillMsg(net.myName, net.otherName);
+      } else {
+        showKillMsg(net.otherName, net.myName);
+      }
+      break;
+
+    case 'hit':
+      if (msg.victim === (net.isHost ? 'host' : 'guest')) {
+        // По нам попали
+        dmgFlash.style.opacity = '0.8';
+        setTimeout(() => dmgFlash.style.opacity = '0', 100);
+        sounds.hit(0, 0.5);
+      } else {
+        // Мы попали
+        showHitmarker(msg.head);
+        if (msg.head) sounds.headshot(0, 0.5); else sounds.hit(0, 0.5);
+      }
+      break;
+
+    case 'end':
+      gameWinner = msg.winner;
+      endOnlineMatch(msg.winner);
+      break;
+
+    case 'forfeit':
+      showToast(`❌ Противник вышел`);
+      endOnlineMatch(net.myName);
+      break;
+
+    case 'hostLeft':
+      showToast(`❌ Хост отключился`);
+      exitToMenu();
+      break;
+
+    case 'guestLeft':
+      showToast(`Гость отключился`);
+      // Хост остаётся в меню ожидания
+      document.getElementById('hostPlayers').innerHTML = `Ты: <b style="color:#ff8844;">${net.myName}</b><br>Ожидание гостя...`;
+      break;
+
+    case 'error':
+      setNetStatus(msg.msg, 'err');
+      break;
+
+    case 'pong':
+      net.ping = Math.round(performance.now() - msg.ts);
+      updatePingUI();
+      break;
   }
 }
 
-function updateBlood(dt, now) {
-  for (let i = bloodParticles.length - 1; i >= 0; i--) {
-    const p = bloodParticles[i];
-    const ud = p.userData;
-    ud.vel.y -= 15 * dt;
-    p.position.add(ud.vel.clone().multiplyScalar(dt));
-    p.material.opacity -= dt;
-    if (now - ud.born > 800) { scene.remove(p); bloodParticles.splice(i, 1); }
-  }
+function updatePingUI() {
+  if (!pingBadge) return;
+  if (net.ping <= 0) { pingBadge.textContent = 'PING ---'; pingBadge.className = ''; return; }
+  pingBadge.textContent = `PING ${net.ping}ms`;
+  if (net.ping < 60) pingBadge.className = 'good';
+  else if (net.ping < 120) pingBadge.className = 'mid';
+  else pingBadge.className = 'bad';
 }
 
-function damagePlayerLocal(dmg, killerName = 'БОТ') {
-  if (!player.alive) return;
-  player.hp -= dmg;
-  if (player.hp < 0) player.hp = 0;
-  updateHpUI();
-  dmgFlash.style.opacity = '0.8';
-  setTimeout(() => dmgFlash.style.opacity = '0', 100);
-  if (player.hp <= 0) dieLocal(killerName);
-}
-
-function dieLocal(killerName) {
-  if (!player.alive) return;
+function endOnlineMatch(winnerName) {
   player.alive = false;
   input.fire = false;
   input.moveX = 0; input.moveY = 0;
-  document.getElementById('deathKiller').textContent = killerName;
+  const isWin = winnerName === net.myName;
+  const lvl = getLevel(progress.xp);
+  const xp = isWin ? getXpForWin(lvl) : getXpForLoss(lvl);
+  addXp(xp);
 
-  matchStats.deaths++;
-  matchStats.currentStreak = 0;
+  document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
+  document.getElementById('winTitle').textContent = isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
+  document.getElementById('winTitle').style.color = isWin ? '#00ff00' : '#ff3333';
+  document.getElementById('winScore').textContent = scoreboard.textContent;
+  const winStatsEl = document.getElementById('winStats');
+  winStatsEl.textContent = `${xp > 0 ? '+' : ''}${xp} XP`;
+  winStatsEl.style.color = isWin ? '#ffaa44' : '#ff5555';
+  document.getElementById('winOverlay').classList.add('show');
+}
 
-  if (mode === MODE.PLAY_SOLO) {
-    if (gameWinner) { document.getElementById('deathOverlay').classList.remove('show'); return; }
-    soloStats.deaths++;
-    updateSoloScoreboard();
-    if (soloStats.deaths >= SOLO_TARGET_DEATHS) {
-      loseSolo(killerName);
-      return;
-    }
-    document.getElementById('deathOverlay').classList.add('show');
-    startRespawnCountdown(3);
-    scheduleDualRespawn(3000);
-    return;
+function setNetStatus(text, cls) {
+  const el = document.getElementById('netStatus');
+  el.textContent = text;
+  el.className = 'netStatus' + (cls ? ' ' + cls : '');
+}
+function showView(viewId) {
+  document.querySelectorAll('.netView').forEach(v => v.classList.remove('show'));
+  document.getElementById(viewId).classList.add('show');
+}
+
+async function createRoom() {
+  const nick = (document.getElementById('playerNick').value || 'Хост').trim().slice(0, 12);
+  if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
+  net.myName = nick;
+  try {
+    await connectServer();
+    const modeVal = document.getElementById('netModeSelect').value;
+    sendToServer({ t: 'create', name: nick, mode: modeVal });
+    net.isHost = true;
+  } catch (e) {
+    setNetStatus('НЕ УДАЛОСЬ ПОДКЛЮЧИТЬСЯ', 'err');
   }
+}
 
-  document.getElementById('deathOverlay').classList.add('show');
-  startRespawnCountdown(3);
-  if (net.isHost) net.hostDeaths++;
-  else net.guestDeaths++;
-  if (net.conn && net.connected) {
-    net.conn.send({ t:'died', by: killerName });
+async function joinRoom() {
+  const nick = (document.getElementById('playerNick').value || 'Гость').trim().slice(0, 12);
+  let code = (document.getElementById('joinCode').value || '').trim().toLowerCase();
+  if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
+  if (!code) { setNetStatus('ВВЕДИ КОД', 'err'); return; }
+  net.myName = nick;
+  try {
+    await connectServer();
+    sendToServer({ t: 'join', name: nick, code: code });
+    net.isHost = false;
+  } catch (e) {
+    setNetStatus('НЕ УДАЛОСЬ ПОДКЛЮЧИТЬСЯ', 'err');
   }
-  scheduleDualRespawn(3000);
 }
 
-function scheduleDualRespawn(delayMs) {
-  const myToken = ++dualRespawnToken;
-  setTimeout(() => {
-    if (myToken !== dualRespawnToken) return;
-    if (gameWinner) return;
-    if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
-    if (mode === MODE.PLAY_SOLO) {
-      document.getElementById('deathOverlay').classList.remove('show');
-      respawnLocal();
-      respawnBotNow();
-    } else if (mode === MODE.PLAY_ONLINE) {
-      document.getElementById('deathOverlay').classList.remove('show');
-      respawnLocal();
+function startPingLoop() {
+  setInterval(() => {
+    if (net.ws && net.ws.readyState === WebSocket.OPEN) {
+      sendToServer({ t: 'ping', ts: performance.now() });
     }
-  }, delayMs);
+  }, 2000);
 }
 
-function respawnBotNow() {
-  bot.alive = true;
-  bot.hp = bot.maxHp;
-  bot.group.rotation.x = 0;
-  bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
-  bot.state = BOT_STATE.PATROL;
-  bot.hasSeenPlayer = false;
-  bot.path = null;
-  bot.patrolTarget = null;
-  bot.respawnAt = 0;
+function startInputLoop() {
+  setInterval(() => {
+    if (mode !== MODE.PLAY_ONLINE || !net.ws || net.ws.readyState !== WebSocket.OPEN) return;
+    sendToServer({
+      t: 'input',
+      input: {
+        moveX: input.moveX,
+        moveY: input.moveY,
+        fire: input.fire,
+        jump: input.jumpPending,
+        crouch: player.isCrouching,
+        weapon: player.weapon,
+        yaw: player.yaw,
+        pitch: player.pitch,
+        reload: player.isReloading,
+      }
+    });
+    input.jumpPending = false;
+  }, 1000 / 30);
 }
 
-function respawnLocal() {
-  player.alive = true;
+/* ============================================================
+   ВХОД В ОНЛАЙН ИГРУ
+   ============================================================ */
+function enterOnlineGame() {
+  mode = MODE.PLAY_ONLINE;
+  document.body.classList.add('ingame', 'ingame-online');
+  document.body.classList.remove('ingame-solo', 'ingame-local');
+
+  document.getElementById('netModal').classList.remove('show');
+  menuEl.classList.add('hidden');
+
+  player.pos.set(0, 0, 25);
+  player.vy = 0;
+  player.yaw = Math.PI;
+  player.pitch = 0;
   player.hp = 100;
+  player.alive = true;
   player.weapon = 'rifle';
-  if (mode === MODE.PLAY_ONLINE) {
-    player.pos.set(0, 0, net.isHost ? 25 : -25);
-    player.yaw = net.isHost ? Math.PI : 0;
-    if (net.isHost) net.hostHp = 100; else net.guestHp = 100;
-    const oppX = 0;
-    const oppZ = net.isHost ? -25 : 25;
-    if (net.isHost) {
-      remotePlayer.group.position.set(oppX, 0, oppZ);
-      remotePlayer.group.visible = true;
-    }
-    if (net.conn && net.connected) {
-      net.conn.send({ t:'respawn', x: oppX, z: oppZ, hostHp: net.hostHp, guestHp: net.guestHp });
-    }
-  } else {
-    player.pos.set(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z);
-    player.yaw = Math.PI;
-  }
   player.ammo = { rifle: 30, shotgun: 8, sniper: 5, knife: 1 };
-  player.grenades = 1;
-  player.vy = 0; player.onGround = true;
   player.isCrouching = false;
   player.isReloading = false;
   player.isScoped = false;
-  player.inspecting = false;
-  setWeaponVisible(player.weapon);
-  camera.fov = 70; camera.updateProjectionMatrix();
-  scopeOverlay.classList.remove('show');
-  document.getElementById('crouchBtn').classList.remove('active');
-  document.getElementById('zoomBtn').classList.remove('active');
-  updateHpUI(); updateAmmoUI();
-}
+  setWeaponVisible('rifle');
 
-function updateSoloScoreboard() {
-  if (mode !== MODE.PLAY_SOLO) return;
-  scoreboard.textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
+  remotePlayer.group.position.set(0, 0, -25);
+  remotePlayer.group.rotation.y = 0;
+  remotePlayer.group.visible = true;
+
+  bot.group.visible = false;
+
+  netBadge.textContent = net.isHost ? '👑 ХОСТ' : '👤 ГОСТЬ';
+  netBadge.className = net.isHost ? 'host' : '';
+  otherNameEl.textContent = net.otherName;
+  otherHpEl.textContent = 100;
+  updateHpUI();
+  updateAmmoUI();
+  scoreboard.textContent = `${net.myName}: 0 | ${net.otherName}: 0`;
   scoreboard.style.display = 'block';
-}
+  document.getElementById('otherHud').style.display = 'block';
 
-function winSolo() {
-  if (gameWinner) return;
-  gameWinner = 'player';
-  player.alive = false;
-  input.fire = false; input.moveX = 0; input.moveY = 0;
-  dualRespawnToken++;
-  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
-  matchStats.active = false;
-  
-  // НАГРАДА XP ЗА ПОБЕДУ
-  const lvl = getLevel(progress.xp);
-  const xp = getXpForWin(lvl);
-  if (xp > 0) addXp(xp);
-
-  document.getElementById('winIcon').textContent = '🏆';
-  document.getElementById('winTitle').textContent = 'ПОБЕДА!';
-  document.getElementById('winTitle').style.color = '#00ff00';
-  document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
-  
-  const winStatsEl = document.getElementById('winStats');
-  winStatsEl.textContent = `+${xp} XP`;
-  winStatsEl.style.color = '#ffaa44';
-  
-  fillMatchStatsOverlay();
-  document.getElementById('winOverlay').classList.add('show');
-}
-
-function loseSolo(killerName) {
-  if (gameWinner) return;
-  gameWinner = 'bot';
-  player.alive = false;
-  input.fire = false; input.moveX = 0; input.moveY = 0;
-  dualRespawnToken++;
-  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
-  matchStats.active = false;
-
-  // ШТРАФ XP ЗА ПОРАЖЕНИЕ
-  const lvl = getLevel(progress.xp);
-  const xpLoss = getXpForLoss(lvl);
-  addXp(xpLoss);
-
+  document.getElementById('winOverlay').classList.remove('show');
   document.getElementById('deathOverlay').classList.remove('show');
-  document.getElementById('winIcon').textContent = '💀';
-  document.getElementById('winTitle').textContent = 'ПОРАЖЕНИЕ';
-  document.getElementById('winTitle').style.color = '#ff3333';
-  document.getElementById('winScore').textContent = `Ты: ${soloStats.kills} | БОТ: ${soloStats.deaths}`;
-  
-  const winStatsEl = document.getElementById('winStats');
-  winStatsEl.textContent = `${xpLoss} XP`;
-  winStatsEl.style.color = '#ff5555';
-  
-  fillMatchStatsOverlay();
-  document.getElementById('winOverlay').classList.add('show');
+
+  clock.getDelta();
 }
 
-/* ========== AI БОТА ========== */
-function updateBot(dt, now) {
-  if (gameWinner) return;
+/* ============================================================
+   ВЫХОД / ПЕРЕЗАПУСК
+   ============================================================ */
+function exitToMenu() {
+  if (mode === MODE.PLAY_ONLINE && !gameWinner && net.ws && net.ws.readyState === WebSocket.OPEN) {
+    sendToServer({ t: 'leave' });
+    const lvl = getLevel(progress.xp);
+    const xpLoss = getXpForLoss(lvl);
+    addXp(xpLoss);
+    showToast(`📉 Выход из игры: ${xpLoss} XP`);
+  }
+
+  document.body.classList.remove('ingame', 'ingame-online', 'ingame-solo');
+  menuEl.classList.remove('hidden');
+  document.getElementById('winOverlay').classList.remove('show');
+  document.getElementById('deathOverlay').classList.remove('show');
+  document.getElementById('otherHud').style.display = 'block';
+  gameWinner = null;
+  mode = MODE.MENU;
+  remotePlayer.group.visible = false;
+  bot.group.visible = false;
+  camera.fov = 70;
+  camera.updateProjectionMatrix();
+  scopeOverlay.classList.remove('show');
+  clock.getDelta();
+
+  if (net.ws) { try { net.ws.close(); } catch(_) {} net.ws = null; }
+  net.connected = false;
+  net.roomCode = null;
+  net.serverSelf = null;
+  net.serverEnemy = null;
+}
+
+/* ============================================================
+   ЛОКАЛЬНЫЙ БОТ (для соло)
+   ============================================================ */
+function updateBotLocal(dt, now) {
   if (!bot.alive) {
     if (now >= bot.respawnAt) {
-      respawnBotNow();
+      bot.alive = true;
+      bot.hp = bot.maxHp;
+      bot.group.rotation.x = 0;
+      bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
+      bot.state = BOT_STATE.PATROL;
+      bot.hasSeenPlayer = false;
+      bot.path = null;
     }
     return;
   }
@@ -2602,69 +2271,42 @@ function updateBot(dt, now) {
   const bp = bot.group.position;
   const dx = player.pos.x - bp.x, dz = player.pos.z - bp.z;
   const dist = Math.hypot(dx, dz);
-
-  let canSeePlayer = false;
+  let canSee = false;
   if (dist < BOT_SIGHT_DIST) {
-    const angleToPlayer = Math.atan2(dx, dz);
-    const facingDiff = Math.abs(angleDiff(angleToPlayer, bot.facing));
-    if (facingDiff < BOT_FOV * 0.5 || dist < 5) {
-      if (hasLineOfSight(bp.x, bp.z, player.pos.x, player.pos.z, 1.6, player.pos.y + PLAYER_HEIGHT)) canSeePlayer = true;
-    }
+    const ang = Math.atan2(dx, dz);
+    const diff = Math.abs(angleDiff(ang, bot.facing));
+    if (diff < BOT_FOV * 0.5 || dist < 5) canSee = true;
   }
 
-  if (canSeePlayer) {
+  if (canSee) {
     if (!bot.hasSeenPlayer) bot.spottedAt = now;
     bot.hasSeenPlayer = true;
     bot.lastSeenX = player.pos.x; bot.lastSeenZ = player.pos.z;
     bot.lastSeenTime = now;
   }
 
-  if (canSeePlayer) {
-    bot.state = dist < BOT_ATTACK_DIST ? BOT_STATE.ATTACK : BOT_STATE.CHASE;
-  } else if (bot.hasSeenPlayer && now - bot.lastSeenTime < BOT_SEARCH_TIME) {
-    bot.state = BOT_STATE.SEARCH;
-  } else {
-    bot.state = BOT_STATE.PATROL;
-    bot.hasSeenPlayer = false;
-  }
+  if (canSee) bot.state = dist < BOT_ATTACK_DIST ? BOT_STATE.ATTACK : BOT_STATE.CHASE;
+  else if (bot.hasSeenPlayer && now - bot.lastSeenTime < BOT_SEARCH_TIME) bot.state = BOT_STATE.SEARCH;
+  else { bot.state = BOT_STATE.PATROL; bot.hasSeenPlayer = false; }
 
   if (bot.state === BOT_STATE.ATTACK) {
-    turnTowards(bot, Math.atan2(dx, dz), dt, 14);
-    if (now > bot.strafeUntil) {
-      bot.strafeDir = Math.random() < 0.5 ? 1 : -1;
-      bot.strafeUntil = now + BOT_STRAFE_INTERVAL + Math.random() * 400;
-    }
-    if (Math.random() < 0.8) {
-      const len = dist || 1;
-      const perpX = -dz / len * bot.strafeDir;
-      const perpZ = dx / len * bot.strafeDir;
-      const step = BOT_SPEED * bot.spdMul * dt;
-      const nx = bp.x + perpX * step;
-      const nz = bp.z + perpZ * step;
-      if (canExistAt(nx, bp.z, 0, 0.5, 2)) bp.x = nx;
-      if (canExistAt(bp.x, nz, 0, 0.5, 2)) bp.z = nz;
-    }
+    turnTowardsBot(bot, Math.atan2(dx, dz), dt, 14);
     if (now - bot.spottedAt < BOT_REACTION_TIME) return;
     if (now - bot.lastShot < BOT_FIRE_COOLDOWN) return;
-    if (!hasLineOfSight(bp.x, bp.z, player.pos.x, player.pos.z, 1.6, player.pos.y + PLAYER_HEIGHT)) return;
     bot.lastShot = now;
     if (Math.random() < BOT_ACCURACY) {
       damagePlayerLocal(BOT_DAMAGE * bot.dmgMul, 'БОТ');
     }
   } else if (bot.state === BOT_STATE.CHASE || bot.state === BOT_STATE.SEARCH) {
-    const tgtX = bot.state === BOT_STATE.CHASE ? player.pos.x : bot.lastSeenX;
-    const tgtZ = bot.state === BOT_STATE.CHASE ? player.pos.z : bot.lastSeenZ;
     if (!bot.path || now - bot.repathAt > 400) {
-      bot.path = findPath(bp.x, bp.z, tgtX, tgtZ);
+      const tgt = bot.state === BOT_STATE.CHASE ? { x: player.pos.x, z: player.pos.z } : { x: bot.lastSeenX, z: bot.lastSeenZ };
+      bot.path = findPath(bp.x, bp.z, tgt.x, tgt.z);
       bot.pathIdx = 0; bot.repathAt = now;
     }
     moveBotAlongPath(bot, dt, 1);
   } else {
     if (!bot.patrolTarget || Math.hypot(bot.patrolTarget.x - bp.x, bot.patrolTarget.z - bp.z) < 1.2) {
-      if (bot.patrolWaitUntil && now < bot.patrolWaitUntil) {
-        turnTowards(bot, bot.facing + dt * 1.5, dt, 10);
-        return;
-      }
+      if (bot.patrolWaitUntil && now < bot.patrolWaitUntil) return;
       for (let i = 0; i < 25; i++) {
         const gx = (Math.random() * NAV_SIZE) | 0;
         const gy = (Math.random() * NAV_SIZE) | 0;
@@ -2683,6 +2325,17 @@ function updateBot(dt, now) {
   }
 }
 
+function turnTowardsBot(b, targetYaw, dt, speed = 8) {
+  const dyaw = angleDiff(targetYaw, b.facing);
+  b.facing += dyaw * Math.min(1, dt * speed);
+  b.group.rotation.y = b.facing;
+}
+function angleDiff(a, b) {
+  let d = a - b;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return d;
+}
 function moveBotAlongPath(b, dt, speedMul = 1) {
   const bp = b.group.position;
   if (!b.path || b.pathIdx >= b.path.length) return;
@@ -2695,32 +2348,12 @@ function moveBotAlongPath(b, dt, speedMul = 1) {
   const nz = bp.z + (wz / wdist) * step;
   if (canExistAt(nx, bp.z, 0, 0.5, 2)) bp.x = nx;
   if (canExistAt(bp.x, nz, 0, 0.5, 2)) bp.z = nz;
-  turnTowards(b, Math.atan2(wx, wz), dt, 8);
+  turnTowardsBot(b, Math.atan2(wx, wz), dt, 8);
 }
 
-function turnTowards(b, targetYaw, dt, speed = 8) {
-  const dyaw = angleDiff(targetYaw, b.facing);
-  b.facing += dyaw * Math.min(1, dt * speed);
-  b.group.rotation.y = b.facing;
-}
-function angleDiff(a, b) {
-  let d = a - b;
-  while (d > Math.PI) d -= Math.PI * 2;
-  while (d < -Math.PI) d += Math.PI * 2;
-  return d;
-}
-function hasLineOfSight(fromX, fromZ, toX, toZ, fromY = 1.6, toY = 1.6) {
-  const ray = new THREE.Ray(new THREE.Vector3(fromX, fromY, fromZ), new THREE.Vector3(toX - fromX, toY - fromY, toZ - fromZ).normalize());
-  const dist = Math.hypot(toX - fromX, toZ - fromZ);
-  const hitVec = new THREE.Vector3();
-  for (let i = 0; i < colliders.length; i++) {
-    const hit = ray.intersectBox(colliders[i], hitVec);
-    if (hit && hit.distanceTo(ray.origin) < dist - 0.2) return false;
-  }
-  return true;
-}
-
-/* ========== NAV MESH ========== */
+/* ============================================================
+   NAV MESH для бота
+   ============================================================ */
 let NAV_CELL, NAV_SIZE, NAV_OFFSET, NAV_RADIUS, navGrid;
 let _gScores, _cameFrom;
 function buildNavGrid() {
@@ -2820,15 +2453,45 @@ function findPath(sx, sz, ex, ez) {
   return null;
 }
 
+function damagePlayerLocal(dmg, killerName = 'БОТ') {
+  if (!player.alive) return;
+  player.hp -= dmg;
+  if (player.hp < 0) player.hp = 0;
+  updateHpUI();
+  dmgFlash.style.opacity = '0.8';
+  setTimeout(() => dmgFlash.style.opacity = '0', 100);
+  if (player.hp <= 0) {
+    player.alive = false;
+    document.getElementById('deathKiller').textContent = killerName;
+    document.getElementById('deathOverlay').classList.add('show');
+    setTimeout(() => {
+      player.alive = true;
+      player.hp = 100;
+      player.pos.set(0, 0, 25);
+      player.yaw = Math.PI;
+      document.getElementById('deathOverlay').classList.remove('show');
+      updateHpUI();
+    }, 3000);
+  }
+}
+
 function applyBotLevel(lvl) {
-  const cfg = BOT_LEVELS[Math.min(lvl, 9)];
+  const cfg = [
+    { hp: 20,  dmg: 0.25, spd: 0.33 }, { hp: 40,  dmg: 0.5,  spd: 1.0 },
+    { hp: 80,  dmg: 1.0,  spd: 1.0 },  { hp: 100, dmg: 1.0,  spd: 1.0 },
+    { hp: 120, dmg: 1.0,  spd: 1.0 },  { hp: 140, dmg: 1.0,  spd: 1.0 },
+    { hp: 150, dmg: 1.0,  spd: 1.0 },  { hp: 200, dmg: 1.0,  spd: 1.0 },
+    { hp: 400, dmg: 3.0,  spd: 2.0 },  { hp: 500, dmg: 4.0,  spd: 3.0 },
+  ][Math.min(lvl, 9)];
   bot.maxHp = cfg.hp;
   bot.hp = cfg.hp;
   bot.dmgMul = cfg.dmg;
   bot.spdMul = cfg.spd;
 }
 
-/* ========== МЕНЮ ========== */
+/* ============================================================
+   МЕНЮ
+   ============================================================ */
 const menuEl = document.getElementById('menu');
 const tabs = document.querySelectorAll('.tab');
 const panels = {
@@ -2848,520 +2511,27 @@ document.getElementById('sensInput').addEventListener('input', e => { document.g
 document.getElementById('opacityInput').addEventListener('input', e => { document.getElementById('opacityVal').textContent = e.target.value; });
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
 
-/* ========== СЕТЬ ========== */
-function setNetStatus(text, cls) {
-  const el = document.getElementById('netStatus');
-  el.textContent = text;
-  el.className = 'netStatus' + (cls ? ' ' + cls : '');
-}
-function showView(viewId) {
-  document.querySelectorAll('.netView').forEach(v => v.classList.remove('show'));
-  document.getElementById(viewId).classList.add('show');
-}
-function genRoomCode() {
-  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
-  let s = '';
-  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return 'zak' + s;
-}
-function displayRoomCode(code) { return (code || '').replace('zak', '').toUpperCase(); }
-
-function destroyPeer() {
-  if (net.peer) { try { net.peer.destroy(); } catch(_){} net.peer = null; }
-  if (net.conn) { try { net.conn.close(); } catch(_){} net.conn = null; }
-  net.connected = false;
-}
-
-function createRoom(isRetry = false) {
-  const nick = (document.getElementById('hostNameInput').value || 'Хост').trim().slice(0, 12);
-  if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
-  net.myName = nick;
-  net.isHost = true;
-  net.roomCode = genRoomCode();
-  net.hostScore = net.guestScore = 0;
-  net.hostDeaths = net.guestDeaths = 0;
-  gameWinner = null;
-
-  const modeVal = document.getElementById('netModeSelect').value;
-  if (modeVal === 'blood') { net.targetKills = -1; net.firstBlood = true; }
-  else { net.targetKills = parseInt(modeVal); net.firstBlood = false; }
-
-  setNetStatus('СОЗДАНИЕ КОМНАТЫ...', 'wait');
-  destroyPeer();
-
-  net.peer = new Peer(net.roomCode, {
-    host: PEER_HOST, port: PEER_PORT, path: PEER_PATH, secure: PEER_SECURE,
-    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-  });
-
-  net.peer.on('open', () => {
-    net.retryCount = 0;
-    setNetStatus('ЖДЁМ ГОСТЯ...', 'wait');
-    showView('hostView');
-    document.getElementById('roomCode').textContent = displayRoomCode(net.roomCode);
-    document.getElementById('hostName').textContent = nick;
-    document.getElementById('hostPlayers').innerHTML = `Ты: <b style="color:#ff8844;">${nick}</b><br>Ожидание гостя...`;
-  });
-
-  net.peer.on('connection', (conn) => {
-    net.conn = conn;
-    conn.on('open', () => { net.connected = true; });
-    conn.on('data', handlePeerData);
-    conn.on('close', () => {
-      net.connected = false;
-      if (mode === MODE.PLAY_ONLINE) { alert('Соединение разорвано'); exitToMenu(); }
-    });
-  });
-
-  net.peer.on('error', (err) => {
-    if (err.type === 'unavailable-id' && !isRetry && net.retryCount < 5) {
-      net.retryCount++;
-      setTimeout(() => createRoom(true), 200);
-      return;
-    }
-    setNetStatus('ОШИБКА: ' + err.type, 'err');
-  });
-}
-
-function joinRoom() {
-  const nick = (document.getElementById('joinName').value || 'Гость').trim().slice(0, 12);
-  let code = (document.getElementById('joinCode').value || '').trim().toLowerCase();
-  if (!nick) { setNetStatus('ВВЕДИ НИК', 'err'); return; }
-  if (!code) { setNetStatus('ВВЕДИ КОД', 'err'); return; }
-  if (!code.startsWith('zak')) code = 'zak' + code;
-
-  net.myName = nick;
-  net.isHost = false;
-  net.hostScore = net.guestScore = 0;
-  net.hostDeaths = net.guestDeaths = 0;
-  gameWinner = null;
-  setNetStatus('ПОДКЛЮЧЕНИЕ...', 'wait');
-  destroyPeer();
-
-  net.peer = new Peer(null, {
-    host: PEER_HOST, port: PEER_PORT, path: PEER_PATH, secure: PEER_SECURE,
-    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-  });
-
-  net.peer.on('open', () => {
-    net.conn = net.peer.connect(code, { reliable: false });
-    net.conn.on('open', () => {
-      net.connected = true;
-      net.conn.send({ t:'hello', name: nick });
-    });
-    net.conn.on('data', handlePeerData);
-    net.conn.on('close', () => {
-      net.connected = false;
-      if (mode === MODE.PLAY_ONLINE) { alert('Соединение разорвано'); exitToMenu(); }
-      else setNetStatus('НЕ УДАЛОСЬ', 'err');
-    });
-  });
-
-  net.peer.on('error', (err) => {
-    if (err.type === 'peer-unavailable') setNetStatus('КОМНАТА НЕ НАЙДЕНА', 'err');
-    else setNetStatus('ОШИБКА: ' + err.type, 'err');
-  });
-}
-
-function handlePeerData(data) {
-  if (!data || !data.t) return;
-
-  switch (data.t) {
-    case 'hello':
-      if (net.isHost) {
-        net.otherName = data.name;
-        net.conn.send({
-          t:'start', name: net.myName,
-          spawnX: 0, spawnZ: -25,
-          targetKills: net.targetKills,
-          firstBlood: net.firstBlood,
-        });
-        enterOnlineGame(0, 25, 0, -25, Math.PI, 0);
-      }
-      break;
-
-    case 'start':
-      if (!net.isHost) {
-        net.otherName = data.name;
-        net.targetKills = data.targetKills;
-        net.firstBlood = data.firstBlood;
-        enterOnlineGame(data.spawnX, data.spawnZ, 0, 25, 0, Math.PI);
-      }
-      break;
-
-    case 'input':
-      if (net.isHost) {
-        net.guestInput.moveX = data.mx || 0;
-        net.guestInput.moveY = data.my || 0;
-        net.guestInput.yaw = data.yaw || 0;
-        net.guestInput.pitch = data.pitch || 0;
-        net.guestInput.fire = !!data.fire;
-        net.guestInput.weapon = data.weapon || 'rifle';
-        net.guestInput.crouch = !!data.crouch;
-        net.guestInput.jump = !!data.jump;
-      }
-      break;
-
-    case 'state':
-      if (!net.isHost) {
-        net.lastSnapshot = data;
-        net.lastSnapshotTime = performance.now();
-        if (data.hostHp !== undefined) { net.hostHp = data.hostHp; }
-        if (data.guestHp !== undefined) { net.guestHp = data.guestHp; }
-        otherHpEl.textContent = net.hostHp;
-      }
-      break;
-
-    case 'dmg':
-      if (net.isHost) {
-        net.guestHp -= data.dmg;
-        if (net.guestHp < 0) net.guestHp = 0;
-        if (net.guestHp <= 0 && remotePlayer.group.visible) {
-          killGuest();
-        }
-        net.conn.send({ t:'state', hostHp: net.hostHp, guestHp: net.guestHp,
-          host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, alive: player.alive } });
-      } else {
-        net.hostHp -= data.dmg;
-        if (net.hostHp < 0) net.hostHp = 0;
-        if (net.hostHp <= 0 && remotePlayer.group.visible) {
-          killHost();
-        }
-        net.conn.send({ t:'state', hostHp: net.hostHp, guestHp: net.guestHp,
-          host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, alive: player.alive } });
-      }
-      break;
-
-    case 'died':
-      if (net.isHost) {
-        net.hostScore++;
-        showKillMsg(net.myName, net.otherName);
-      } else {
-        net.guestScore++;
-        showKillMsg(net.myName, net.otherName);
-      }
-      matchStats.kills++;
-      matchStats.currentStreak++;
-      if (matchStats.currentStreak > matchStats.bestStreak) matchStats.bestStreak = matchStats.currentStreak;
-      updateScoreboard();
-      checkWinCondition();
-      break;
-
-    case 'hp':
-      if (data.host !== undefined) net.hostHp = data.host;
-      if (data.guest !== undefined) net.guestHp = data.guest;
-      otherHpEl.textContent = net.isHost ? net.guestHp : net.hostHp;
-      break;
-
-    case 'respawn':
-      if (data.x !== undefined && data.z !== undefined) {
-        remotePlayer.group.position.set(data.x, 0, data.z);
-        remotePlayer.group.visible = true;
-      }
-      if (data.hostHp !== undefined) net.hostHp = data.hostHp;
-      if (data.guestHp !== undefined) net.guestHp = data.guestHp;
-      player.pos.set(0, 0, net.isHost ? 25 : -25);
-      player.hp = 100; player.alive = true;
-      player.yaw = net.isHost ? Math.PI : 0;
-      player.isCrouching = false;
-      player.isReloading = false;
-      player.isScoped = false;
-      player.weapon = 'rifle';
-      setWeaponVisible('rifle');
-      camera.fov = 70; camera.updateProjectionMatrix();
-      scopeOverlay.classList.remove('show');
-      updateHpUI(); updateAmmoUI();
-      break;
-  }
-}
-
-function killGuest() {
-  if (!remotePlayer.group.visible) return;
-  remotePlayer.group.visible = false;
-  if (net.isHost) {
-    net.hostScore++;
-    showKillMsg(net.myName, net.otherName);
-  }
-  matchStats.kills++;
-  matchStats.currentStreak++;
-  if (matchStats.currentStreak > matchStats.bestStreak) matchStats.bestStreak = matchStats.currentStreak;
-  updateScoreboard();
-  checkWinCondition();
-  if (!gameWinner) scheduleDualRespawn(3000);
-}
-function killHost() {
-  if (!remotePlayer.group.visible) return;
-  remotePlayer.group.visible = false;
-  if (!net.isHost) {
-    net.guestScore++;
-    showKillMsg(net.myName, net.otherName);
-  }
-  matchStats.kills++;
-  matchStats.currentStreak++;
-  if (matchStats.currentStreak > matchStats.bestStreak) matchStats.bestStreak = matchStats.currentStreak;
-  updateScoreboard();
-  checkWinCondition();
-  if (!gameWinner) scheduleDualRespawn(3000);
-}
-
-function enterOnlineGame(myX, myZ, otherX, otherZ, myYaw, otherYaw) {
-  mode = MODE.PLAY_ONLINE;
-  net.isOnline = true;
-  document.body.classList.add('ingame-online');
-  document.body.classList.remove('ingame-solo');
-
-  player.pos.set(myX, 0, myZ);
-  player.vy = 0; player.yaw = myYaw; player.pitch = 0;
-  player.hp = 100; player.alive = true;
-  player.weapon = 'rifle';
-  player.ammo = { rifle: 30, shotgun: 8, sniper: 5, knife: 1 };
-  player.grenades = 1;
-  player.isCrouching = false;
-  player.isReloading = false;
-  player.isScoped = false;
-
-  remotePlayer.group.position.set(otherX, 0, otherZ);
-  remotePlayer.group.rotation.y = otherYaw;
-  remotePlayer.group.visible = true;
-  bot.group.visible = false;
-  net.hostHp = 100; net.guestHp = 100;
-
-  resetMatchStats();
-  menuEl.classList.add('hidden');
-  document.getElementById('netModal').classList.remove('show');
-  document.body.classList.add('ingame');
-
-  netBadge.textContent = net.isHost ? '👑 ХОСТ' : '👤 ГОСТЬ';
-  netBadge.className = net.isHost ? 'host' : '';
-  otherNameEl.textContent = net.otherName;
-  otherHpEl.textContent = 100;
-  setWeaponVisible('rifle');
-  updateHpUI(); updateAmmoUI(); updateScoreboard();
-
-  clock.getDelta();
-  startNetTick();
-}
-
-function updateScoreboard() {
-  const my = net.isHost ? net.hostScore : net.guestScore;
-  const other = net.isHost ? net.guestScore : net.hostScore;
-  scoreboard.textContent = `${net.myName}: ${my} | ${net.otherName}: ${other}`;
-  scoreboard.style.display = 'block';
-}
-
-function checkWinCondition() {
-  if (mode === MODE.PLAY_SOLO) return;
-  if (gameWinner) return;
-  if (net.firstBlood) return;
-  if (net.hostScore >= net.targetKills) gameWinner = 'host';
-  else if (net.guestScore >= net.targetKills) gameWinner = 'guest';
-  if (!gameWinner) return;
-
-  player.alive = false;
-  input.fire = false; input.moveX = 0; input.moveY = 0;
-  dualRespawnToken++;
-  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
-  matchStats.active = false;
-  
-  const isWin = (gameWinner === 'host' && net.isHost) || (gameWinner === 'guest' && !net.isHost);
-  const lvl = getLevel(progress.xp);
-  const xp = isWin ? getXpForWin(lvl) : getXpForLoss(lvl);
-  addXp(xp);
-
-  document.getElementById('winIcon').textContent = isWin ? '🏆' : '💀';
-  document.getElementById('winTitle').textContent = isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
-  document.getElementById('winTitle').style.color = isWin ? '#00ff00' : '#ff3333';
-  document.getElementById('winScore').textContent = `Счёт: ${net.hostScore} : ${net.guestScore}`;
-  
-  const winStatsEl = document.getElementById('winStats');
-  winStatsEl.textContent = `${xp > 0 ? '+' : ''}${xp} XP`;
-  winStatsEl.style.color = isWin ? '#ffaa44' : '#ff5555';
-
-  fillMatchStatsOverlay();
-  document.getElementById('winOverlay').classList.add('show');
-}
-
-let netTickInterval = null;
-function startNetTick() {
-  if (netTickInterval) clearInterval(netTickInterval);
-  netTickInterval = setInterval(() => {
-    if (!net.connected || mode !== MODE.PLAY_ONLINE) return;
-    if (net.isHost) {
-      const guestState = {
-        pos: remotePlayer.group.position,
-        vy: 0, yaw: net.guestInput.yaw,
-        onGround: true,
-      };
-      if (net.guestInput.jump) {
-        tryJump(guestState);
-        net.guestInput.jump = false;
-      }
-      stepPlayerPhysics(guestState, net.guestInput, TICK_MS/1000, net.guestInput.crouch);
-      remotePlayer.group.rotation.y = guestState.yaw;
-      if (net.guestInput.fire) {
-        const now = performance.now();
-        if (!remotePlayer._lastShot || now - remotePlayer._lastShot > 110) {
-          remotePlayer._lastShot = now;
-          const from = remotePlayer.group.position.clone().add(new THREE.Vector3(0, 1.5, 0));
-          const to = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0));
-          spawnTracer(from, to, 0xff6644);
-        }
-      }
-      net.conn.send({ t:'state',
-        hostHp: net.hostHp, guestHp: net.guestHp,
-        host: { x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw, alive: player.alive } });
-    } else {
-      const jumpFlag = player._jumpPending === true;
-      player._jumpPending = false;
-      net.conn.send({
-        t:'input',
-        mx: input.moveX, my: input.moveY,
-        yaw: player.yaw, pitch: player.pitch, fire: input.fire,
-        weapon: player.weapon, crouch: player.isCrouching, jump: jumpFlag,
-      });
-      const snap = net.lastSnapshot;
-      if (!snap || !snap.host) return;
-      const cp = remotePlayer.group.position;
-      cp.x += (snap.host.x - cp.x) * 0.3;
-      cp.y += (snap.host.y - cp.y) * 0.3;
-      cp.z += (snap.host.z - cp.z) * 0.3;
-      remotePlayer.group.rotation.y += (snap.host.yaw - remotePlayer.group.rotation.y) * 0.3;
-      remotePlayer.group.visible = snap.host.alive !== false;
-    }
-  }, TICK_MS);
-}
-function stopNetTick() { if (netTickInterval) { clearInterval(netTickInterval); netTickInterval = null; } }
-
-/* ========== ПЕРЕХОДЫ ========== */
-function startSoloGame() {
-  const lvl = getLevel(progress.xp);
-  if (lvl >= 10) { showDifficultyPicker(); return; }
-  applyBotLevel(lvl);
-  doStartSoloGame();
-}
-
-function doStartSoloGame() {
-  mode = MODE.PLAY_SOLO;
-  net.isOnline = false;
-  gameWinner = null;
-  soloStats.kills = 0;
-  soloStats.deaths = 0;
-  dualRespawnToken++;
-  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
-  resetMatchStats();
-
-  menuEl.classList.add('hidden');
-  document.body.classList.add('ingame');
-  document.body.classList.remove('ingame-online');
-  document.body.classList.add('ingame-solo');
-  remotePlayer.group.visible = false;
-  bot.group.visible = true;
-  respawnBotNow();
-
-  player.pos.set(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z);
-  player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
-  player.hp = 100; player.alive = true;
-  player.weapon = 'rifle'; player.grenades = 1;
-  player.ammo = { rifle: 30, shotgun: 8, sniper: 5, knife: 1 };
-  player.isReloading = false; player.isCrouching = false; player.isScoped = false;
-  player.inspecting = false;
-  setWeaponVisible('rifle');
-  updateHpUI(); updateAmmoUI();
-  camera.fov = 70; camera.updateProjectionMatrix();
-  scopeOverlay.classList.remove('show');
-  document.getElementById('zoomBtn').classList.remove('active');
-  document.getElementById('crouchBtn').classList.remove('active');
-
-  netBadge.textContent = 'ОДИНОЧНЫЙ · ДО 16';
-  netBadge.className = '';
-  otherHpEl.textContent = 100;
-  document.getElementById('otherHud').style.display = 'none';
-  updateSoloScoreboard();
-
-  input.fire = false; input.moveX = 0; input.moveY = 0;
-  clock.getDelta();
-}
-
-function showDifficultyPicker() {
-  const modal = document.getElementById('difficultyModal');
-  const list = document.getElementById('difficultyList');
-  list.innerHTML = '';
-  for (let i = 0; i < 10; i++) {
-    const btn = document.createElement('button');
-    btn.style.cssText = 'padding:12px; background:rgba(255,136,68,0.2); border:2px solid rgba(255,136,68,0.5); color:#fff; border-radius:8px; font:bold 13px sans-serif; cursor:pointer;';
-    btn.textContent = `Ур. ${i}`;
-    btn.addEventListener('click', () => {
-      modal.style.display = 'none';
-      applyBotLevel(i);
-      doStartSoloGame();
-    });
-    list.appendChild(btn);
-  }
-  modal.style.display = 'flex';
-  document.getElementById('difficultyCancel').onclick = () => { modal.style.display = 'none'; };
-}
-
-function exitToMenu() {
-  // ШТРАФ XP ЗА ВЫХОД ВО ВРЕМЯ МАТЧА
-  if ((mode === MODE.PLAY_SOLO || mode === MODE.PLAY_ONLINE) && !gameWinner) {
-    const lvl = getLevel(progress.xp);
-    const xpLoss = getXpForLoss(lvl);
-    addXp(xpLoss);
-    showToast(`📉 Выход из игры: ${xpLoss} XP`);
-  }
-
-  stopNetTick();
-  document.body.classList.remove('ingame');
-  document.body.classList.remove('ingame-online');
-  document.body.classList.remove('ingame-solo');
-  menuEl.classList.remove('hidden');
-  document.getElementById('deathOverlay').classList.remove('show');
-  document.getElementById('winOverlay').classList.remove('show');
-  hideMatchStatsOverlay();
-  document.getElementById('difficultyModal').style.display = 'none';
-  if (respawnCountdownId) { clearInterval(respawnCountdownId); respawnCountdownId = null; }
-  mode = MODE.MENU;
-  destroyPeer();
-  gameWinner = null;
-  soloStats.kills = 0;
-  soloStats.deaths = 0;
-  dualRespawnToken++;
-  matchStats.active = false;
-  remotePlayer.group.visible = false;
-  bot.group.visible = false;
-  document.getElementById('otherHud').style.display = 'block';
-  camera.fov = 70; camera.updateProjectionMatrix();
-  scopeOverlay.classList.remove('show');
-  clock.getDelta();
-}
-
-document.getElementById('playBtn').addEventListener('click', startSoloGame);
 document.getElementById('netBtn').addEventListener('click', () => {
   document.getElementById('netModal').classList.add('show');
   setNetStatus('ВЫБЕРИ РЕЖИМ', '');
   showView('netStartView');
 });
-document.getElementById('exitBtn').addEventListener('click', exitToMenu);
 document.getElementById('netClose').addEventListener('click', () => {
-  destroyPeer();
   document.getElementById('netModal').classList.remove('show');
+  if (net.ws) { try { net.ws.close(); } catch(_) {} net.ws = null; }
+  net.connected = false;
 });
-document.getElementById('hostBtn').addEventListener('click', () => {
-  setNetStatus('ВВЕДИ НИК', '');
-  showView('createNickView');
-  document.getElementById('hostNameInput').focus();
-});
-document.getElementById('createRoomBtn').addEventListener('click', () => createRoom(false));
-document.getElementById('createBackBtn').addEventListener('click', () => showView('netStartView'));
+document.getElementById('hostBtn').addEventListener('click', createRoom);
 document.getElementById('joinBtn').addEventListener('click', () => {
-  setNetStatus('ВВЕДИ КОД КОМНАТЫ', '');
+  setNetStatus('ВВЕДИ КОД', '');
   showView('joinView');
   document.getElementById('joinCode').focus();
 });
 document.getElementById('joinConnectBtn').addEventListener('click', joinRoom);
 document.getElementById('joinCancelBtn').addEventListener('click', () => showView('netStartView'));
 document.getElementById('copyCodeBtn').addEventListener('click', () => {
-  const code = displayRoomCode(net.roomCode);
+  const code = (net.roomCode || '').toUpperCase();
+  if (!code) return;
   const btn = document.getElementById('copyCodeBtn');
   const restore = () => setTimeout(() => btn.textContent = '📋 КОПИРОВАТЬ КОД', 1500);
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3372,27 +2542,20 @@ document.getElementById('copyCodeBtn').addEventListener('click', () => {
   }
 });
 document.getElementById('hostCancelBtn').addEventListener('click', () => {
-  destroyPeer();
+  if (net.ws) { try { net.ws.close(); } catch(_) {} net.ws = null; }
+  net.connected = false;
   showView('netStartView');
 });
+document.getElementById('exitBtn').addEventListener('click', exitToMenu);
 document.getElementById('winMenu').addEventListener('click', exitToMenu);
 document.getElementById('winRestart').addEventListener('click', () => {
   document.getElementById('winOverlay').classList.remove('show');
-  hideMatchStatsOverlay();
-  if (mode === MODE.PLAY_SOLO) {
-    const lvl = getLevel(progress.xp);
-    if (lvl >= 10) {
-      exitToMenu();
-    } else {
-      applyBotLevel(lvl);
-      doStartSoloGame();
-    }
-  } else {
-    exitToMenu();
-  }
+  exitToMenu();
 });
 
-/* ========== ГЛАВНЫЙ ЦИКЛ ========== */
+/* ============================================================
+   ГЛАВНЫЙ ЦИКЛ
+   ============================================================ */
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -3411,76 +2574,74 @@ function animate() {
     camera.position.set(x, menuCam.height, z);
     camera.lookAt(menuCam.centerX, menuCam.height + menuCam.pitch, menuCam.centerZ);
   } else {
-    if (player.alive) {
-      stepPlayerPhysics(player, input, dt, player.isCrouching);
-      if (input.fire) tryShoot();
-    }
-    if (mode === MODE.PLAY_SOLO) updateBot(dt, now);
-    updateGrenades(dt, now);
-    updateBlood(dt, now);
+    if (mode === MODE.PLAY_ONLINE && net.serverSelf) {
+      // --- ПРЕДСКАЗАНИЕ СВОЕЙ ПОЗИЦИИ ---
+      const myInput = { moveX: input.moveX, moveY: input.moveY };
+      stepPlayerPhysics(player, myInput, dt, player.isCrouching);
 
+      // Коррекция по серверу (если расхождение > 1.5м — snap)
+      const ss = net.serverSelf;
+      const dx = ss.x - player.pos.x;
+      const dz = ss.z - player.pos.z;
+      const dy = ss.y - player.pos.y;
+      const dist = Math.hypot(dx, dy, dz);
+      if (dist > 1.5) {
+        player.pos.set(ss.x, ss.y, ss.z);
+        player.vy = 0;
+      } else if (dist > 0.3) {
+        player.pos.x += dx * 0.2;
+        player.pos.y += dy * 0.2;
+        player.pos.z += dz * 0.2;
+      }
+
+      // --- ИНТЕРПОЛЯЦИЯ ВРАГА ---
+      if (net.serverEnemy) {
+        const es = net.serverEnemy;
+        const target = remotePlayer.group.position;
+        // Плавный lerp (30 fps)
+        target.x += (es.x - target.x) * 0.3;
+        target.y += (es.y - target.y) * 0.3;
+        target.z += (es.z - target.z) * 0.3;
+        remotePlayer.group.rotation.y = es.yaw;
+        remotePlayer.group.visible = es.alive;
+      }
+    } else if (mode === MODE.PLAY_SOLO) {
+      if (player.alive) {
+        stepPlayerPhysics(player, input, dt, player.isCrouching);
+        if (input.fire) tryShootLocal();
+      }
+      updateBotLocal(dt, now);
+    }
+
+    // Камера
     const currentHeight = player.isCrouching ? CROUCH_HEIGHT : PLAYER_HEIGHT;
     camera.position.set(player.pos.x, player.pos.y + currentHeight, player.pos.z);
     const cp = Math.cos(player.pitch);
     const lookDir = new THREE.Vector3(-Math.sin(player.yaw)*cp, Math.sin(player.pitch), -Math.cos(player.yaw)*cp);
     camera.lookAt(camera.position.clone().add(lookDir));
 
+    // Перезарядка локально (визуал)
     if (player.isReloading && now >= player.reloadEndTime) {
       player.isReloading = false;
       player.ammo[player.weapon] = WEAPON_STATS[player.weapon].magSize;
       updateAmmoUI();
     }
-    if (player.inspecting && now >= player.inspectEndTime) {
-      player.inspecting = false;
-    }
+
+    // Анимация оружия
     const activeModel = weaponModels[player.weapon];
     if (activeModel) {
-      const pivot = activeModel.userData.pivotPoint || new THREE.Vector3(0.22, -0.30, 0.0);
-      if (player.inspecting) {
-        // 1. Выезд в центр экрана (первые 0.3с), потом вращение (2.5с), потом возврат
-        const elapsed = (player.inspectEndTime - now);
-        const total = 2500;
-        const tProg = 1 - Math.max(0, elapsed / total); // 0..1
-        let lift = 0;
-        if (tProg < 0.15) lift = tProg / 0.15;
-        else if (tProg > 0.85) lift = (1 - tProg) / 0.15;
-        else lift = 1;
-
-        const targetX = -0.22;
-        const targetY = 0.30;
-        const targetZ = -0.05;
-
-        const angle = (now * 0.0025) % (Math.PI * 2);
-
-        activeModel.rotation.y = angle;
-        activeModel.rotation.x = 0;
-        activeModel.rotation.z = 0;
-
-        const cosA = Math.cos(angle);
-        const sinA = Math.sin(angle);
-        const dx = pivot.x - (pivot.x * cosA - pivot.z * sinA);
-        const dz = pivot.z - (pivot.x * sinA + pivot.z * cosA);
-
-        activeModel.position.set(
-          dx + targetX * lift,
-          targetY * lift,
-          dz + targetZ * lift
-        );
-      } else {
-        activeModel.rotation.y = 0;
-        activeModel.rotation.x = 0;
-        activeModel.rotation.z = 0;
-        activeModel.position.set(0, 0, 0);
-      }
+      activeModel.rotation.set(0, 0, 0);
+      activeModel.position.set(0, 0, 0);
     }
 
+    // HP над врагом
     let enemyPos = null, enemyHp = 0, enemyMax = 100;
     if (mode === MODE.PLAY_SOLO && bot.alive) {
       enemyPos = bot.group.position.clone(); enemyPos.y += 2.5;
       enemyHp = bot.hp; enemyMax = bot.maxHp;
-    } else if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible) {
+    } else if (mode === MODE.PLAY_ONLINE && remotePlayer.group.visible && net.serverEnemy) {
       enemyPos = remotePlayer.group.position.clone(); enemyPos.y += 2.5;
-      enemyHp = net.isHost ? net.guestHp : net.hostHp; enemyMax = 100;
+      enemyHp = net.serverEnemy.hp; enemyMax = 100;
     }
     if (enemyPos) {
       const sp = enemyPos.clone().project(camera);
@@ -3496,10 +2657,7 @@ function animate() {
       enemyHpBar.classList.remove('show');
     }
 
-    if (mode === MODE.PLAY_ONLINE) {
-      otherHpEl.textContent = Math.round(net.isHost ? net.guestHp : net.hostHp);
-    }
-
+    // Трассеры
     for (let i = tracers.length-1; i >= 0; i--) {
       const t = tracers[i];
       const age = now - t.born;
@@ -3512,11 +2670,146 @@ function animate() {
         t.line.material.opacity = 1 - age/90;
       }
     }
+
+    // Кровь
+    for (let i = bloodParticles.length - 1; i >= 0; i--) {
+      const p = bloodParticles[i];
+      const ud = p.userData;
+      ud.vel.y -= 15 * dt;
+      p.position.add(ud.vel.clone().multiplyScalar(dt));
+      p.material.opacity -= dt;
+      if (now - ud.born > 800) { scene.remove(p); bloodParticles.splice(i, 1); }
+    }
   }
   renderer.render(scene, camera);
 }
 
-/* Клавиатура */
+/* ============================================================
+   ЛОКАЛЬНАЯ СТРЕЛЬБА (для соло, онлайн — сервер)
+   ============================================================ */
+function tryShootLocal() {
+  if (!player.alive || player.isReloading) return;
+  const now = performance.now();
+  const stats = WEAPON_STATS[player.weapon];
+  if (now - player.lastShotTime < stats.fireRate) return;
+  if (player.weapon !== 'knife' && player.ammo[player.weapon] <= 0) return;
+  player.lastShotTime = now;
+  if (player.weapon !== 'knife') player.ammo[player.weapon]--;
+  updateAmmoUI();
+
+  if (player.weapon === 'knife') sounds.knife(0, 0.7);
+  else if (player.weapon === 'rifle') sounds.shot(0, 0.5);
+  else if (player.weapon === 'shotgun') sounds.shotgun(0, 0.8);
+  else sounds.sniper(0, 1.0);
+
+  const shootDir = new THREE.Vector3();
+  const origin = new THREE.Vector3();
+  camera.getWorldDirection(shootDir);
+  camera.getWorldPosition(origin);
+
+  const targets = [];
+  if (bot.alive) targets.push(bot.hitHead, bot.hitBody);
+  // Стены (все объекты сцены, кроме игрока)
+  scene.children.forEach(obj => {
+    if (obj.isMesh && obj !== remotePlayer.group && !obj.userData.noRaycast) targets.push(obj);
+  });
+
+  raycaster.set(origin, shootDir);
+  const hits = raycaster.intersectObjects(targets, false);
+  if (!hits[0]) return;
+  const first = hits[0];
+  const end = first.point.clone();
+  spawnTracer(origin, end, 0xffaa00);
+
+  if (first.object === bot.hitHead) {
+    bot.hp -= stats.damageHead;
+    showHitmarker(true);
+    spawnBlood(end);
+    sounds.headshot(0, 0.5);
+    if (bot.hp <= 0) {
+      bot.alive = false;
+      bot.group.rotation.x = -Math.PI/2;
+      bot.respawnAt = now + 3000;
+      showKillMsg('Ты', 'БОТ');
+    }
+  } else if (first.object === bot.hitBody) {
+    bot.hp -= stats.damageBody;
+    showHitmarker(false);
+    spawnBlood(end);
+    sounds.hit(0, 0.5);
+    if (bot.hp <= 0) {
+      bot.alive = false;
+      bot.group.rotation.x = -Math.PI/2;
+      bot.respawnAt = now + 3000;
+      showKillMsg('Ты', 'БОТ');
+    }
+  }
+}
+
+function spawnTracer(a, b, color) {
+  const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
+  const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.9 });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line);
+  tracers.push({ line, born: performance.now() });
+}
+
+function spawnBlood(pos) {
+  for (let i = 0; i < 5; i++) {
+    const p = new THREE.Mesh(
+      new THREE.SphereGeometry(0.05, 4, 4),
+      new THREE.MeshBasicMaterial({ color:0xff0000, transparent:true, opacity:0.8 })
+    );
+    p.position.copy(pos);
+    p.userData = {
+      vel: new THREE.Vector3((Math.random()-0.5)*5, Math.random()*4, (Math.random()-0.5)*5),
+      born: performance.now()
+    };
+    scene.add(p);
+    bloodParticles.push(p);
+  }
+}
+
+function showKillMsg(killer, victim) {
+  const el = document.createElement('div');
+  el.className = 'killMsg';
+  el.innerHTML = `<b>${killer}</b> ⟶ <b style="color:#ff8888">${victim}</b>`;
+  killfeed.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+/* ============================================================
+   СОЛО РЕЖИМ
+   ============================================================ */
+document.getElementById('playBtn').addEventListener('click', () => {
+  mode = MODE.PLAY_SOLO;
+  document.body.classList.add('ingame', 'ingame-solo');
+  document.body.classList.remove('ingame-online');
+  menuEl.classList.add('hidden');
+  player.pos.set(0, 0, 25);
+  player.vy = 0; player.yaw = Math.PI; player.pitch = 0;
+  player.hp = 100; player.alive = true;
+  player.weapon = 'rifle'; player.grenades = 1;
+  player.ammo = { rifle: 30, shotgun: 8, sniper: 5, knife: 1 };
+  updateHpUI(); updateAmmoUI();
+  setWeaponVisible('rifle');
+  const lvl = getLevel(progress.xp);
+  applyBotLevel(lvl);
+  bot.alive = true;
+  bot.hp = bot.maxHp;
+  bot.group.position.set(BOT_SPAWN.x, 0, BOT_SPAWN.z);
+  bot.group.rotation.x = 0;
+  bot.group.visible = true;
+  netBadge.textContent = 'ОДИНОЧНЫЙ';
+  netBadge.className = '';
+  scoreboard.style.display = 'none';
+  document.getElementById('otherHud').style.display = 'none';
+  clock.getDelta();
+});
+
+/* ============================================================
+   Клавиатура
+   ============================================================ */
 let mouseDown = false;
 addEventListener('keydown', e => {
   if (mode === MODE.MENU || !player || !player.alive) return;
@@ -3525,7 +2818,7 @@ addEventListener('keydown', e => {
   if (e.key === 'a' || e.key === 'A') input.moveX = -1;
   if (e.key === 'd' || e.key === 'D') input.moveX = 1;
   if (e.key === ' ') input.fire = true;
-  if (e.key === 'Shift') tryJump(player);
+  if (e.key === 'Shift') { tryJump(player); input.jumpPending = true; }
   if (e.key === 'r' || e.key === 'R') handleReload();
   if (e.key === 'c' || e.key === 'C') {
     player.isCrouching = !player.isCrouching;
@@ -3541,7 +2834,7 @@ addEventListener('keyup', e => {
 });
 addEventListener('mousedown', e => {
   if (mode === MODE.MENU) return;
-  if (e.target.closest('#fire, #jump, #exitBtn, #deathOverlay, #netModal, #winOverlay, #difficultyModal, #crouchBtn, #zoomBtn, #swapBtn, #reloadBtn, #menu, #layoutEditor')) return;
+  if (e.target.closest('button, input, select, #fire, #jump, #exitBtn, #deathOverlay, #netModal, #winOverlay, #difficultyModal, #crouchBtn, #zoomBtn, #swapBtn, #reloadBtn, #menu, #layoutEditor')) return;
   mouseDown = true;
 });
 addEventListener('mouseup', () => mouseDown = false);
@@ -3552,12 +2845,17 @@ addEventListener('mousemove', e => {
   player.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, player.pitch));
 });
 
-/* СТАРТ */
+/* ============================================================
+   СТАРТ
+   ============================================================ */
 initScene();
+buildColliders();
 buildNavGrid();
 applySettingsToUI();
 updateProgressUI();
 animate();
+startPingLoop();
+startInputLoop();
 </script>
 </body>
  </html>
